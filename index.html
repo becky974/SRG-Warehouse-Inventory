@@ -272,11 +272,23 @@ label.f textarea { min-height: 70px; resize: vertical; }
     out: ["Sent to venue", "Used on site", "Damaged / written off", "Transfer out", "Returned to supplier", "Other"],
     count: ["Stocktake"],
   };
+  // SRG venues, from the group "Brands" list (Oct 2026). Edit here to add or rename a venue.
+  const VENUES_OPEN = ["Akti", "Budgewoi Hotel", "HarbourWatch", "Lago Cucina", "Noi", "Ripples Chowder Bay", "Ripples Little Manly",
+    "Ripples Rose Bay", "Riva Rose Bay", "Sails Lavender Bay", "SRG at The Australian National Maritime Museum", "SRG at The Langham",
+    "SRG Events", "Summer Salt", "The Fenwick", "The James", "The Nielsen", "Ventuno"];
+  const VENUES_SOON = ["Aqua", "Dunbar House", "Ripples Milsons Point", "Ripples Watsons Bay"];
+  const VENUE_OTHER = "Other (see note)";
+  const venueOptions = (sel, blank) =>
+    (blank ? `<option value="">${blank}</option>` : `<option value="" disabled ${sel ? "" : "selected"}>Choose a venue…</option>`)
+    + `<optgroup label="Venues">${VENUES_OPEN.map((v) => `<option ${v === sel ? "selected" : ""}>${esc(v)}</option>`).join("")}</optgroup>`
+    + `<optgroup label="Opening soon">${VENUES_SOON.map((v) => `<option ${v === sel ? "selected" : ""}>${esc(v)}</option>`).join("")}</optgroup>`
+    + `<option ${sel === VENUE_OTHER ? "selected" : ""}>${VENUE_OTHER}</option>`;
+  const lastVenue = () => { try { return localStorage.getItem("srg-venue") || ""; } catch (_) { return ""; } };
   const UNITS = ["each", "box", "carton", "case", "pack", "pallet", "roll", "kg", "L"];
 
   const S = {
     items: new Map(), moves: [], itemMoves: [], itemMovesFor: null,
-    q: "", cat: "", loc: "", only: "", sort: "name", tab: "stock", act: "all",
+    q: "", cat: "", loc: "", only: "", sort: "name", tab: "stock", act: "all", venue: "",
     open: null, // {kind:'item', id} | {kind:'form', id|null}
     moveType: "out", confirmDelete: false,
     canWrite: true, uid: null, loaded: false, stale: false, offline: false,
@@ -378,7 +390,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
     }
     throw { code: "busy", message: "Someone else is updating this item right now. Try again in a few seconds." };
   }
-  async function recordMove(itemId, type, qty, reason, ref, note) {
+  async function recordMove(itemId, type, qty, reason, ref, note, venue) {
     const iref = db.doc("items/" + itemId);
     return withLease(iref, async () => {
       const snap = await iref.get();
@@ -392,7 +404,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
       await iref.update({ qty: bal, updatedAt: now, updatedBy: S.uid });
       await db.collection("moves").doc().set({
         itemId, itemName: it.name || "", sku: it.sku || "", unit: it.unit || "", location: it.location || "",
-        type, delta, qty, balance: bal, reason: reason || "", ref: ref || "", note: note || "", by: S.uid, at: now,
+        type, delta, qty, balance: bal, reason: reason || "", venue: venue || "", ref: ref || "", note: note || "", by: S.uid, at: now,
       });
       return { delta, bal };
     });
@@ -496,7 +508,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
       const title = showItem
         ? (exists ? `<button class="linkish" type="button" data-item="${esc(m.itemId)}">${esc(m.itemName)}</button>` : esc(m.itemName) + ' <span class="status">(deleted)</span>')
         : label;
-      const detail = [showItem ? label : "", m.reason, m.ref ? "Ref " + m.ref : "", m.note].filter(Boolean).map(esc).join(" · ");
+      const detail = [showItem ? label : "", m.venue ? (m.type === "in" ? "from " : "to ") + m.venue : "", m.reason, m.ref ? "Ref " + m.ref : "", m.note].filter(Boolean).map(esc).join(" · ");
       out += `<div class="log-row">
         <div class="log-when">${timeOf(m.at)}</div>
         <div class="log-what"><div class="t">${title}</div><div class="d">${detail} · ${esc(who(m.by))}</div></div>
@@ -506,12 +518,17 @@ label.f textarea { min-height: 70px; resize: vertical; }
     return out;
   }
 
+  const actList = () => S.moves.filter((m) => (S.act === "all" || m.type === S.act) && (!S.venue || m.venue === S.venue));
   function renderActivity() {
     const opts = [["all", "All"], ["in", "Booked in"], ["out", "Booked out"], ["count", "Stocktakes"]];
     $("#actFilters").innerHTML = opts.map(([k, l]) => `<button class="chip" type="button" data-act="${k}" aria-pressed="${S.act === k}">${l}</button>`).join("")
       + `<span class="spacer"></span>${downloads && S.moves.length ? `<button class="btn ghost" type="button" id="exportMoves">Export CSV</button>` : ""}
       <span class="count">Latest ${S.moves.length} moves</span>`;
-    const list = S.moves.filter((m) => S.act === "all" || m.type === S.act);
+    const used = [...new Set(S.moves.map((m) => m.venue).filter(Boolean))].sort();
+    if (S.venue && !used.includes(S.venue)) S.venue = "";
+    const vs = used.length ? `<select id="actVenue" aria-label="Filter by venue"><option value="">All venues</option>${used.map((v) => `<option ${S.venue === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>` : "";
+    $("#actFilters").querySelector(".spacer").insertAdjacentHTML("afterend", vs);
+    const list = actList();
     $("#log").innerHTML = !S.loaded
       ? `<div class="empty"><h2>Loading…</h2></div>`
       : list.length ? `<div class="log">${moveRows(list, true)}</div>`
@@ -558,10 +575,12 @@ label.f textarea { min-height: 70px; resize: vertical; }
             <div class="stepper"><button type="button" data-step="-1" aria-label="Less">−</button>
             <input id="mvQty" type="number" inputmode="decimal" min="0" step="any" value="${S.moveType === "count" ? fmtQty(it.qty).replace(/,/g, "") : 1}" required>
             <button type="button" data-step="1" aria-label="More">+</button></div></label>
+          ${S.moveType === "out" ? `<label class="f" for="mvVenue">Venue <span class="req">*</span><select id="mvVenue" required>${venueOptions(lastVenue())}</select></label>`
+            : S.moveType === "in" ? `<label class="f" for="mvVenue">From venue<select id="mvVenue">${venueOptions("", "Not from a venue")}</select></label>` : ""}
           <div class="row2">
             <label class="f" for="mvReason">Reason<select id="mvReason">${reasons.map((r) => `<option>${esc(r)}</option>`).join("")}</select></label>
-            <label class="f" for="mvRef">${S.moveType === "out" ? "Venue / docket" : S.moveType === "in" ? "PO / invoice no." : "Reference"}
-              <input id="mvRef" type="text" placeholder="${S.moveType === "out" ? "e.g. venue name" : "optional"}"></label>
+            <label class="f" for="mvRef">${S.moveType === "out" ? "Docket no." : S.moveType === "in" ? "PO / invoice no." : "Reference"}
+              <input id="mvRef" type="text" placeholder="optional"></label>
           </div>
           <label class="f" for="mvNote">Note<input id="mvNote" type="text" placeholder="optional"></label>
           <div class="preview" id="mvPreview"></div>
@@ -663,7 +682,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
   function renderLists() {
     renderSummary();
     if (S.tab === "stock") { renderFilters(); renderGrid(); } else renderActivity();
-    if (S.open) renderOverlay();
+    renderOverlay();
   }
   function render() {
     for (const t of ["stock", "activity"]) {
@@ -748,10 +767,14 @@ label.f textarea { min-height: 70px; resize: vertical; }
     const n = parseFloat($("#mvQty").value);
     if (!(n >= 0) || (S.moveType !== "count" && n === 0)) { toast("Enter a quantity above zero.", true); return; }
     const reason = $("#mvReason").value, ref = $("#mvRef").value.trim(), note = $("#mvNote").value.trim();
+    const venue = S.moveType === "count" ? "" : ($("#mvVenue")?.value || "");
+    if (S.moveType === "out" && !venue) { toast("Choose which venue the stock is going to.", true); $("#mvVenue")?.focus(); return; }
+    if (venue === VENUE_OTHER && !note) { toast("Add the destination in the note.", true); $("#mvNote")?.focus(); return; }
+    if (S.moveType === "out") { try { localStorage.setItem("srg-venue", venue); } catch (_) {} }
     S.busy = true; renderOverlay();
     try {
-      const r = await recordMove(it.id, S.moveType, n, reason, ref, note);
-      toast(S.moveType === "count" ? `Count saved: ${fmtQty(r.bal)} ${it.unit || ""}` : `${S.moveType === "in" ? "Booked in" : "Booked out"} ${fmtQty(n)} · now ${fmtQty(r.bal)} on hand`);
+      const r = await recordMove(it.id, S.moveType, n, reason, ref, note, venue);
+      toast(S.moveType === "count" ? `Count saved: ${fmtQty(r.bal)} ${it.unit || ""}` : `${S.moveType === "in" ? "Booked in" : "Booked out"} ${fmtQty(n)}${venue && S.moveType === "out" ? " to " + venue : ""} · now ${fmtQty(r.bal)} on hand`);
       ["mvRef", "mvNote"].forEach((id) => { const el = $("#" + id); if (el) el.value = ""; });
       const q = $("#mvQty"); if (q) q.value = S.moveType === "count" ? r.bal : 1;
     } catch (e) { onWriteError(e); }
@@ -802,9 +825,9 @@ label.f textarea { min-height: 70px; resize: vertical; }
         .concat(filtered().map((i) => [i.name, i.sku, i.category, i.location, i.qty, i.unit, i.minQty || "", { ok: "OK", low: "Low", none: "Out" }[stockState(i)], i.supplier, i.notes, i.updatedAt]));
       name = `srg-stock-${stamp}.csv`;
     } else {
-      rows = [["Date", "Time", "Item", "SKU", "Type", "Change", "Balance", "Unit", "Reason", "Reference", "Note", "By"]]
-        .concat(S.moves.filter((m) => S.act === "all" || m.type === S.act).map((m) => [new Date(m.at).toLocaleDateString("en-AU"), timeOf(m.at), m.itemName, m.sku,
-          { in: "In", out: "Out", count: "Stocktake" }[m.type], m.delta, m.balance, m.unit, m.reason, m.ref, m.note, who(m.by)]));
+      rows = [["Date", "Time", "Item", "SKU", "Type", "Change", "Balance", "Unit", "Venue", "Reason", "Reference", "Note", "By"]]
+        .concat(actList().map((m) => [new Date(m.at).toLocaleDateString("en-AU"), timeOf(m.at), m.itemName, m.sku,
+          { in: "In", out: "Out", count: "Stocktake" }[m.type], m.delta, m.balance, m.unit, m.venue || "", m.reason, m.ref, m.note, who(m.by)]));
       name = `srg-stock-movements-${stamp}.csv`;
     }
     try { await downloads.save({ filename: name, data: rows.map((r) => r.map(csvCell).join(",")).join("\r\n") }); toast("Saved " + name); }
@@ -838,7 +861,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
     if (d.act) { S.act = d.act; render(); return; }
     if (d.item) return openItem(d.item);
     if ("close" in d) return closeOverlay();
-    if (d.t) { S.moveType = d.t; S.fresh = ["mvReason", "mvQty"]; renderOverlay(); return; }
+    if (d.t) { S.moveType = d.t; S.fresh = ["mvReason", "mvQty", "mvVenue"]; renderOverlay(); return; }
     if (d.step) { const q = $("#mvQty"); q.value = Math.max(0, (parseFloat(q.value) || 0) + Number(d.step)); updatePreview(); return; }
     if (d.cam) { camTarget = d.cam; $("#camInput").click(); return; }
     if (d.pick) { camTarget = d.pick; $("#fileInput").click(); return; }
@@ -863,6 +886,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
     if (e.target.id === "mvQty") updatePreview();
   });
   document.addEventListener("change", (e) => {
+    if (e.target.id === "actVenue") { S.venue = e.target.value; renderActivity(); }
     if (e.target.id === "locSel") { S.loc = e.target.value; render(); }
     if (e.target.id === "sortSel") { S.sort = e.target.value; try { localStorage.setItem("srg-sort", S.sort); } catch (_) {} render(); }
   });
