@@ -1,5 +1,19 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SRG Warehouse Stock</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="SRG warehouse stock: photos, bin locations, and stock booked in and out to venues.">
+<meta name="theme-color" content="#141311">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Warehouse">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
@@ -212,8 +226,49 @@ label.f textarea { min-height: 70px; resize: vertical; }
   .sheet { animation: slide .18s ease-out; }
   @keyframes slide { from { transform: translateX(24px); opacity: .6; } }
 }
-</style>
 
+html, body { margin: 0; }
+img { max-width: 100%; }
+code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radius: 3px; }
+.mast-btn { color: var(--mast-ink); border-color: rgba(251, 246, 230, .25); padding: 9px 12px; }
+.mast-btn:hover { border-color: var(--mast-ink); }
+.photo .zoom { all: unset; display: block; width: 100%; height: 100%; cursor: zoom-in; }
+.photo .zoom:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+
+/* Sign-in */
+.auth { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding-block: max(24px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-bottom, 0px)); background: var(--mast); }
+.auth-card { width: min(400px, 100%); background: var(--bg); border-radius: var(--r); padding: 28px 24px; display: grid; gap: 14px; border-top: 4px solid var(--orange); }
+.auth-logo { display: flex; align-items: center; gap: 12px; color: var(--ink); }
+.auth-logo .logo { height: 28px; width: auto; }
+.auth-logo span { font: 400 22px/1 var(--f-display); padding-left: 12px; border-left: 1px solid var(--line); }
+.auth-card h2 { font: 400 28px/1.15 var(--f-display); margin: 6px 0 0; }
+.auth-card p { margin: 0; color: var(--muted); }
+.auth-err { color: var(--out) !important; font-weight: 700; }
+
+@media (max-width: 640px) {
+  .top-row { gap: 10px; padding-block: 10px 8px; }
+  .search { order: 3; flex-basis: 100%; max-width: none; }
+  .brand { gap: 10px; }
+  .brand .logo { height: 24px; }
+  .brand-text { padding-left: 10px; }
+  .brand h1 { font-size: 19px; }
+  #addBtn { padding: 8px 12px; font-size: 15px; }
+  .mast-btn { display: none; }
+  .foot { display: flex; }
+}
+.foot { display: none; justify-content: center; padding-block: 0 32px; }
+</style>
+</head>
+<body>
+<template id="logoTpl"><svg class="logo" role="img" aria-label="SRG" viewBox="0 0 232 91" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M16.0317 58.8979C16.72 69.3903 24.0515 74.949 34.7084 74.949C43.3004 74.949 48.5747 71.1237 48.5747 64.5816C48.5747 58.0395 43.9887 55.1977 31.1586 52.9725C11.3374 49.639 2.51342 41.8635 2.51342 26.6708C2.51342 9.76137 15.0032 0.127408 33.5638 0.127408C52.1244 0.127408 65.6427 10.4948 66.795 25.9291L50.0673 29.8793C48.8067 20.4954 42.7358 15.8034 33.3395 15.8034C24.8635 15.8034 20.5095 19.5037 20.5095 25.0624C20.5095 32.8379 27.1526 34.3213 42.6276 37.0381C59.015 40.005 66.6868 48.2722 66.6868 63.2149C66.6868 80.9993 53.0524 91 33.8035 91C12.8378 91 0.920297 79.5159 0 62.2315L16.0395 58.8979H16.0317Z" fill="currentColor"/>
+<path d="M117.203 42.1051C123.621 42.1051 127.627 37.9049 127.627 30.4961C127.627 23.0872 124.078 19.137 117.087 19.137H98.0697V42.1051H117.203ZM142.29 79.7659C143.667 83.2245 144.812 85.6913 146.985 87.0497V88.7749H126.815C125.323 87.4164 124.635 85.808 124.178 84.0829L119.136 70.7487C115.702 61.4897 113.181 58.8979 105.502 58.8979H98.0542V88.7749H80.0659V2.35255H121.317C136.784 2.35255 145.492 11.3615 145.492 25.9374C145.492 41.7385 136.784 49.3973 121.657 50.389V56.0727C130.481 57.3061 134.263 59.1563 138.841 70.8904L142.275 79.7826L142.29 79.7659Z" fill="currentColor"/>
+<path d="M195.219 0.00240023C213.78 0.252417 228.45 11.7282 232 28.8959L215.156 33.9546C212.179 23.4623 205.188 17.4119 194.647 17.2869C180.092 17.2869 171.384 29.3876 171.384 45.9304C171.384 62.4731 180.548 74.5739 195.675 74.5739C207.021 74.4489 214.808 68.0318 216.641 58.6479V57.2895H194.755V42.1051H231.536V88.7748H216.525V87.9081C216.981 84.8246 218.698 80.6243 220.191 76.5491L214.692 73.5822C210.454 83.8329 202.659 90.8667 189.829 90.8667C166.11 90.8667 153.164 70.4903 153.164 46.6638C153.172 17.7869 171.732 -0.239282 195.219 0.00240023Z" fill="currentColor"/>
+</svg></template>
+
+<div id="auth" class="auth gutter" hidden></div>
+
+<div id="app" hidden>
 <header class="top">
   <div class="wrap gutter">
     <div class="top-row">
@@ -221,7 +276,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
 <path d="M16.0317 58.8979C16.72 69.3903 24.0515 74.949 34.7084 74.949C43.3004 74.949 48.5747 71.1237 48.5747 64.5816C48.5747 58.0395 43.9887 55.1977 31.1586 52.9725C11.3374 49.639 2.51342 41.8635 2.51342 26.6708C2.51342 9.76137 15.0032 0.127408 33.5638 0.127408C52.1244 0.127408 65.6427 10.4948 66.795 25.9291L50.0673 29.8793C48.8067 20.4954 42.7358 15.8034 33.3395 15.8034C24.8635 15.8034 20.5095 19.5037 20.5095 25.0624C20.5095 32.8379 27.1526 34.3213 42.6276 37.0381C59.015 40.005 66.6868 48.2722 66.6868 63.2149C66.6868 80.9993 53.0524 91 33.8035 91C12.8378 91 0.920297 79.5159 0 62.2315L16.0395 58.8979H16.0317Z" fill="currentColor"/>
 <path d="M117.203 42.1051C123.621 42.1051 127.627 37.9049 127.627 30.4961C127.627 23.0872 124.078 19.137 117.087 19.137H98.0697V42.1051H117.203ZM142.29 79.7659C143.667 83.2245 144.812 85.6913 146.985 87.0497V88.7749H126.815C125.323 87.4164 124.635 85.808 124.178 84.0829L119.136 70.7487C115.702 61.4897 113.181 58.8979 105.502 58.8979H98.0542V88.7749H80.0659V2.35255H121.317C136.784 2.35255 145.492 11.3615 145.492 25.9374C145.492 41.7385 136.784 49.3973 121.657 50.389V56.0727C130.481 57.3061 134.263 59.1563 138.841 70.8904L142.275 79.7826L142.29 79.7659Z" fill="currentColor"/>
 <path d="M195.219 0.00240023C213.78 0.252417 228.45 11.7282 232 28.8959L215.156 33.9546C212.179 23.4623 205.188 17.4119 194.647 17.2869C180.092 17.2869 171.384 29.3876 171.384 45.9304C171.384 62.4731 180.548 74.5739 195.675 74.5739C207.021 74.4489 214.808 68.0318 216.641 58.6479V57.2895H194.755V42.1051H231.536V88.7748H216.525V87.9081C216.981 84.8246 218.698 80.6243 220.191 76.5491L214.692 73.5822C210.454 83.8329 202.659 90.8667 189.829 90.8667C166.11 90.8667 153.164 70.4903 153.164 46.6638C153.172 17.7869 171.732 -0.239282 195.219 0.00240023Z" fill="currentColor"/>
-</svg><div class="brand-text"><h1>Warehouse</h1><small id="status">Connecting…</small></div></div>
+</svg><div class="brand-text"><h1>Warehouse</h1><small id="status">Loading…</small></div></div>
       <label class="search" for="q">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input id="q" type="search" placeholder="Search name, SKU, bin, supplier" autocomplete="off" aria-label="Search stock">
@@ -229,6 +284,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
       <button class="btn primary" id="addBtn" type="button">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add item
       </button>
+      <button class="btn ghost mast-btn" type="button" data-signout>Sign out</button>
     </div>
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" id="tab-stock" data-tab="stock" aria-selected="true">Stock</button>
@@ -249,6 +305,8 @@ label.f textarea { min-height: 70px; resize: vertical; }
     <div id="log"></div>
   </section>
 </main>
+<footer class="wrap gutter foot"><button class="btn ghost" type="button" data-signout>Sign out</button></footer>
+</div>
 
 <div id="overlay" class="overlay" hidden></div>
 <div id="lightbox" class="lightbox" hidden><img id="lbImg" alt=""></div>
@@ -256,13 +314,15 @@ label.f textarea { min-height: 70px; resize: vertical; }
 <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
 <input type="file" id="fileInput" accept="image/*" multiple hidden>
 
+<script src="vendor/supabase-2.45.4.min.js"></script>
+<script src="config.js"></script>
 <script>
 (() => {
   "use strict";
+  const CFG = window.SRG_CONFIG || {};
+  const BUCKET = "item-photos";
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const TAB = "tab-" + Math.random().toString(36).slice(2);
   const ICON_BOX = '<svg class="ph" viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>';
   const ICON_CAM = '<svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
   const ICON_IMG = '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 9"/></svg>';
@@ -278,60 +338,41 @@ label.f textarea { min-height: 70px; resize: vertical; }
     "SRG Events", "Summer Salt", "The Fenwick", "The James", "The Nielsen", "Ventuno"];
   const VENUES_SOON = ["Aqua", "Dunbar House", "Ripples Milsons Point", "Ripples Watsons Bay"];
   const VENUE_OTHER = "Other (see note)";
+  const UNITS = ["each", "box", "carton", "case", "pack", "pallet", "roll", "kg", "L"];
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k) || ""; } catch (_) { return ""; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} },
+  };
   const venueOptions = (sel, blank) =>
     (blank ? `<option value="">${blank}</option>` : `<option value="" disabled ${sel ? "" : "selected"}>Choose a venue…</option>`)
     + `<optgroup label="Venues">${VENUES_OPEN.map((v) => `<option ${v === sel ? "selected" : ""}>${esc(v)}</option>`).join("")}</optgroup>`
     + `<optgroup label="Opening soon">${VENUES_SOON.map((v) => `<option ${v === sel ? "selected" : ""}>${esc(v)}</option>`).join("")}</optgroup>`
     + `<option ${sel === VENUE_OTHER ? "selected" : ""}>${VENUE_OTHER}</option>`;
-  const lastVenue = () => { try { return localStorage.getItem("srg-venue") || ""; } catch (_) { return ""; } };
-  const UNITS = ["each", "box", "carton", "case", "pack", "pallet", "roll", "kg", "L"];
 
   const S = {
     items: new Map(), moves: [], itemMoves: [], itemMovesFor: null,
-    q: "", cat: "", loc: "", only: "", sort: "name", tab: "stock", act: "all", venue: "",
-    open: null, // {kind:'item', id} | {kind:'form', id|null}
-    moveType: "out", confirmDelete: false,
-    canWrite: true, uid: null, loaded: false, stale: false, offline: false,
-    busy: false, pending: [], // pending photos for form: {blob, url}
-    names: {},
+    q: "", cat: "", loc: "", only: "", sort: store.get("srg-sort") || "name", tab: "stock", act: "all", venue: "",
+    open: null, moveType: "out", confirmDelete: false, fresh: [],
+    uid: null, name: "", email: "", loaded: false, netErr: false, busy: false, pending: [],
   };
-  let db = null, assets = null, user = null, downloads = null, unsubItemMoves = null;
+  let sb = null, channel = null, pollT = null;
 
   // ---------- helpers ----------
+  const mapItem = (r) => ({ id: r.id, name: r.name, sku: r.sku, category: r.category, location: r.location, unit: r.unit,
+    qty: Number(r.qty) || 0, minQty: Number(r.min_qty) || 0, supplier: r.supplier, notes: r.notes, photos: r.photos || [], updatedAt: r.updated_at });
+  const mapMove = (r) => ({ id: r.id, itemId: r.item_id, itemName: r.item_name, sku: r.sku, unit: r.unit, type: r.type,
+    qty: Number(r.qty), delta: Number(r.delta), balance: Number(r.balance), venue: r.venue, reason: r.reason, ref: r.ref,
+    note: r.note, by: r.by_user, byName: r.by_name, at: r.created_at });
   const itemsArr = () => [...S.items.values()];
-  const stockState = (it) => {
-    const q = Number(it.qty) || 0, min = Number(it.minQty) || 0;
-    if (q <= 0) return "none";
-    if (min > 0 && q <= min) return "low";
-    return "ok";
-  };
-  const pill = (it) => {
-    const s = stockState(it);
-    if (s === "none") return '<span class="pill none">Out of stock</span>';
-    if (s === "low") return '<span class="pill low">Low</span>';
-    return "";
-  };
+  const stockState = (it) => (it.qty <= 0 ? "none" : it.minQty > 0 && it.qty <= it.minQty ? "low" : "ok");
+  const pill = (it) => ({ none: '<span class="pill none">Out of stock</span>', low: '<span class="pill low">Low</span>' }[stockState(it)] || "");
   const fmtQty = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString("en-AU");
   const signed = (n) => (n > 0 ? "+" : n < 0 ? "−" : "±") + fmtQty(Math.abs(n));
   const dayKey = (iso) => new Date(iso).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const timeOf = (iso) => new Date(iso).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
   const isToday = (iso) => new Date(iso).toDateString() === new Date().toDateString();
-  const who = (id) => (id && S.names[id]) || (id && id === S.uid ? "You" : "Someone");
-  const blobUrl = (id) => "/_blob/" + encodeURIComponent(id);
-
-  async function resolveNames(ids) {
-    if (!user || !ids.length) return;
-    const uniq = [...new Set(ids.filter(Boolean))];
-    try {
-      const ps = await user.profiles(uniq);
-      let changed = false;
-      for (const id of uniq) {
-        const n = ps[id]?.isMe ? "You" : (ps[id]?.name || "");
-        if (n && S.names[id] !== n) { S.names[id] = n; changed = true; }
-      }
-      if (changed) renderLists();
-    } catch (_) {}
-  }
+  const who = (m) => (m.by && m.by === S.uid ? "You" : m.byName || "Someone");
 
   let toastT;
   function toast(msg, err) {
@@ -340,82 +381,97 @@ label.f textarea { min-height: 70px; resize: vertical; }
     clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), err ? 6000 : 2800);
   }
   function errMsg(e) {
-    const c = e && e.code;
-    if (c === "busy") return e.message;
-    if (c === "quota_exceeded") return "The stock database is full. Delete old items you no longer stock, then try again.";
-    if (c === "invalid_argument") return "You don't have permission to change stock here. Ask the owner to make you a Contributor.";
-    if (c === "too_large") return "That photo is too large (20 MB max).";
-    if (c === "unsupported_type") return "That file type isn't supported. Use a JPG, PNG or WebP photo.";
-    if (c === "quota_or_state") return "Photo storage is full. Remove some old photos and try again.";
-    if (c === "rate_limited" || c === "resource_exhausted") return "Too many changes at once. Wait a few seconds and try again.";
-    if (c === "revoked" || c === "not_granted") return "Your access to this page changed. Reload to continue.";
-    if (c === "not_uploader") return "Only the person who took this photo (or an editor) can delete the file.";
-    return "Couldn't save. Check your connection and try again.";
+    const m = (e && (e.message || e.error_description)) || "";
+    if (e && e.code === "P0001") return m;
+    if (/Failed to fetch|NetworkError|Load failed|network/i.test(m)) return "No connection. Check your Wi-Fi or mobile data and try again.";
+    if (/JWT|session|not authenticated/i.test(m)) return "Your sign-in has expired. Sign in again.";
+    if (e && (e.code === "42501" || /permission|row-level security/i.test(m))) return "You don't have permission to do that.";
+    if (/maximum allowed size|too large|413/i.test(m)) return "That photo is too large (10 MB max).";
+    if (/mime|invalid_mime/i.test(m)) return "That file type isn't supported. Use a JPG, PNG or WebP photo.";
+    return m ? "Couldn't save: " + m : "Couldn't save. Try again.";
   }
-  function onWriteError(e) {
-    if (e && e.code === "invalid_argument") S.canWrite = false;
-    toast(errMsg(e), true);
-    render();
-  }
+  const fail = (e) => { toast(errMsg(e), true); };
+  const must = ({ data, error }) => { if (error) throw error; return data; };
 
-  // ---------- image shrink ----------
+  // ---------- photos (private bucket → short-lived signed links) ----------
+  const urls = new Map(); const wanted = new Set(); let urlT;
+  function photoSrc(path) {
+    const u = urls.get(path);
+    if (u && u.exp > Date.now()) return u.url;
+    if (!wanted.has(path)) { wanted.add(path); clearTimeout(urlT); urlT = setTimeout(fetchUrls, 20); }
+    return "";
+  }
+  async function fetchUrls() {
+    const paths = [...wanted]; wanted.clear();
+    if (!paths.length) return;
+    const { data, error } = await sb.storage.from(BUCKET).createSignedUrls(paths, 6 * 3600);
+    paths.forEach((p, i) => {
+      const d = !error && data && data[i];
+      urls.set(p, d && d.signedUrl ? { url: d.signedUrl, exp: Date.now() + 6 * 3600e3 - 120e3 } : { url: "", exp: Date.now() + 60e3 });
+    });
+    renderLists();
+  }
   async function shrink(file) {
     try {
       const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
-      const max = 1600, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const s = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
       const c = document.createElement("canvas");
       c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
       c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
-      const out = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.82));
-      return out || file;
+      return (await new Promise((r) => c.toBlob(r, "image/jpeg", 0.82))) || file;
     } catch (_) { return file; }
   }
-  async function uploadPhoto(file) {
+  const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+  async function uploadPhoto(itemId, file) {
     const blob = await shrink(file);
     const type = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(blob.type) ? blob.type : "image/jpeg";
-    let r;
-    try { r = await assets.upload(blob, { type }); }
-    catch (e) { if (e && e.code === "store_unavailable") { await sleep(800); r = await assets.upload(blob, { type }); } else throw e; }
-    return r.id;
+    const path = `${itemId}/${uuid()}.${type.split("/")[1].replace("jpeg", "jpg")}`;
+    must(await sb.storage.from(BUCKET).upload(path, blob, { contentType: type, upsert: false }));
+    return path;
   }
 
-  // ---------- stock movement with a short lease so two people can't clobber a count ----------
-  async function withLease(ref, fn) {
-    for (let i = 0; i < 10; i++) {
-      let r;
-      try { r = await ref.acquire({ holder: TAB, ttlMs: 4000 }); }
-      catch (e) { if (e && (e.code === "capability_removed" || e.code === "capability_disabled")) return fn(); throw e; }
-      if (r.acquired) return fn();
-      await sleep(500 + Math.random() * 500);
+  // ---------- data ----------
+  async function loadItems() {
+    const all = [];
+    for (let from = 0; ; from += 1000) {
+      const rows = must(await sb.from("items").select("*").order("name").range(from, from + 999));
+      all.push(...rows);
+      if (rows.length < 1000) break;
     }
-    throw { code: "busy", message: "Someone else is updating this item right now. Try again in a few seconds." };
+    S.items = new Map(all.map((r) => [r.id, mapItem(r)]));
   }
-  async function recordMove(itemId, type, qty, reason, ref, note, venue) {
-    const iref = db.doc("items/" + itemId);
-    return withLease(iref, async () => {
-      const snap = await iref.get();
-      if (!snap.exists) throw { code: "busy", message: "This item was deleted." };
-      const it = snap.data();
-      const cur = Number(it.qty) || 0;
-      const delta = type === "in" ? qty : type === "out" ? -qty : qty - cur;
-      const bal = cur + delta;
-      if (type === "out" && bal < 0) throw { code: "busy", message: `Only ${fmtQty(cur)} ${it.unit || ""} on hand. Do a stocktake count if the system is wrong.` };
-      const now = new Date().toISOString();
-      await iref.update({ qty: bal, updatedAt: now, updatedBy: S.uid });
-      await db.collection("moves").doc().set({
-        itemId, itemName: it.name || "", sku: it.sku || "", unit: it.unit || "", location: it.location || "",
-        type, delta, qty, balance: bal, reason: reason || "", venue: venue || "", ref: ref || "", note: note || "", by: S.uid, at: now,
-      });
-      return { delta, bal };
-    });
+  async function loadMoves() {
+    S.moves = must(await sb.from("moves").select("*").order("created_at", { ascending: false }).limit(300)).map(mapMove);
   }
+  async function loadItemMoves(id) {
+    const rows = must(await sb.from("moves").select("*").eq("item_id", id).order("created_at", { ascending: false }).limit(100));
+    if (S.open?.id === id) { S.itemMoves = rows.map(mapMove); S.itemMovesFor = id; }
+  }
+  let refreshing = null, again = false;
+  async function refresh() {
+    if (!sb || !S.uid) return;
+    if (refreshing) { again = true; return refreshing; }
+    refreshing = (async () => {
+      try {
+        await Promise.all([loadItems(), loadMoves(), S.open?.kind === "item" ? loadItemMoves(S.open.id) : null]);
+        S.loaded = true; S.netErr = false;
+      } catch (e) {
+        S.netErr = true;
+        if (/JWT/i.test(e?.message || "")) { await sb.auth.signOut(); }
+      }
+      render();
+    })();
+    await refreshing; refreshing = null;
+    if (again) { again = false; refresh(); }
+  }
+  let rT; const soon = () => { clearTimeout(rT); rT = setTimeout(refresh, 300); };
 
   // ---------- render ----------
   function filtered() {
     const q = S.q.trim().toLowerCase();
-    let list = itemsArr().filter((it) => {
-      if (S.cat && (it.category || "") !== S.cat) return false;
-      if (S.loc && (it.location || "") !== S.loc) return false;
+    const list = itemsArr().filter((it) => {
+      if (S.cat && it.category !== S.cat) return false;
+      if (S.loc && it.location !== S.loc) return false;
       if (S.only === "low" && stockState(it) === "ok") return false;
       if (S.only === "none" && stockState(it) !== "none") return false;
       if (q) {
@@ -425,11 +481,11 @@ label.f textarea { min-height: 70px; resize: vertical; }
       return true;
     });
     const by = {
-      name: (a, b) => (a.name || "").localeCompare(b.name || ""),
-      bin: (a, b) => (a.location || "~").localeCompare(b.location || "~", undefined, { numeric: true }) || (a.name || "").localeCompare(b.name || ""),
-      qty: (a, b) => (Number(a.qty) || 0) - (Number(b.qty) || 0),
+      name: (a, b) => a.name.localeCompare(b.name),
+      bin: (a, b) => (a.location || "~").localeCompare(b.location || "~", undefined, { numeric: true }) || a.name.localeCompare(b.name),
+      qty: (a, b) => a.qty - b.qty,
       recent: (a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""),
-    }[S.sort];
+    }[S.sort] || ((a, b) => a.name.localeCompare(b.name));
     return list.sort(by);
   }
 
@@ -438,11 +494,12 @@ label.f textarea { min-height: 70px; resize: vertical; }
     const low = arr.filter((i) => stockState(i) === "low").length;
     const none = arr.filter((i) => stockState(i) === "none").length;
     const today = S.moves.filter((m) => isToday(m.at)).length;
+    const v = (n) => (S.loaded ? n : "–");
     $("#summary").innerHTML = `
-      <div class="stat"><b>${S.loaded ? arr.length : "–"}</b><span>Stock lines</span></div>
-      <button class="stat ${low ? "alert" : ""}" type="button" data-only="low"><b>${S.loaded ? low : "–"}</b><span>Low stock</span></button>
-      <button class="stat ${none ? "crit" : ""}" type="button" data-only="none"><b>${S.loaded ? none : "–"}</b><span>Out of stock</span></button>
-      <button class="stat" type="button" data-goto="activity"><b>${S.loaded ? today : "–"}</b><span>Moves today</span></button>`;
+      <div class="stat"><b>${v(arr.length)}</b><span>Stock lines</span></div>
+      <button class="stat ${low ? "alert" : ""}" type="button" data-only="low"><b>${v(low)}</b><span>Low stock</span></button>
+      <button class="stat ${none ? "crit" : ""}" type="button" data-only="none"><b>${v(none)}</b><span>Out of stock</span></button>
+      <button class="stat" type="button" data-goto="activity"><b>${v(today)}</b><span>Moves today</span></button>`;
   }
 
   function renderFilters() {
@@ -451,7 +508,6 @@ label.f textarea { min-height: 70px; resize: vertical; }
     const locs = [...new Set(arr.map((i) => i.location).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     if (S.cat && !cats.includes(S.cat)) S.cat = "";
     if (S.loc && !locs.includes(S.loc)) S.loc = "";
-    const n = filtered().length;
     $("#filters").innerHTML = `
       <button class="chip" type="button" data-cat="" aria-pressed="${!S.cat}">All</button>
       ${cats.map((c) => `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${S.cat === c}">${esc(c)}</button>`).join("")}
@@ -464,30 +520,30 @@ label.f textarea { min-height: 70px; resize: vertical; }
         <option value="qty" ${S.sort === "qty" ? "selected" : ""}>Lowest qty first</option>
         <option value="recent" ${S.sort === "recent" ? "selected" : ""}>Recently changed</option>
       </select>
-      ${downloads && arr.length ? `<button class="btn ghost" type="button" id="exportStock">Export CSV</button>` : ""}
-      <span class="count num">${n} of ${arr.length}</span>`;
+      ${arr.length ? `<button class="btn ghost" type="button" id="exportStock">Export CSV</button>` : ""}
+      <span class="count num">${filtered().length} of ${arr.length}</span>`;
   }
 
   function renderGrid() {
     const el = $("#grid");
     if (!S.loaded) {
-      el.innerHTML = `<div class="empty"><h2>${S.offline ? "Stock list unavailable" : "Loading stock…"}</h2><p>${S.offline ? "This page needs to be opened in Claude, signed in, to load the shared stock list." : S.stale ? "The stock list is taking a while to load. Check your connection." : "Fetching the shared stock list."}</p></div>`;
+      el.innerHTML = `<div class="empty"><h2>${S.netErr ? "Can't reach the stock list" : "Loading stock…"}</h2><p>${S.netErr ? "Check your Wi-Fi or mobile data. The list will load as soon as you're back online." : "Fetching the shared stock list."}</p></div>`;
       return;
     }
     if (!S.items.size) {
       el.innerHTML = `<div class="empty">${ICON_BOX.replace('class="ph"', 'class="ph" style="width:64px;height:64px"')}
         <h2>No stock yet</h2>
         <p>Add your first item: snap a photo, give it a name and the bin it lives in (for example <span class="bin">A-03-2</span> for aisle A, bay 3, shelf 2), and enter how many are on hand.</p>
-        ${S.canWrite ? `<button class="btn primary" type="button" data-add>Add first item</button>` : ""}</div>`;
+        <button class="btn primary" type="button" data-add>Add first item</button></div>`;
       return;
     }
     const list = filtered();
     if (!list.length) { el.innerHTML = `<div class="empty"><h2>No matches</h2><p>Nothing matches those filters. Clear the search or pick “All”.</p></div>`; return; }
     el.innerHTML = `<div class="grid">${list.map((it) => {
-      const ph = (it.photos || [])[0];
+      const src = it.photos[0] ? photoSrc(it.photos[0]) : "";
       return `<button class="card" type="button" data-item="${esc(it.id)}">
-        <div class="thumb">${ph ? `<img src="${blobUrl(ph)}" alt="" loading="lazy">` : ICON_BOX}
-          ${(it.photos || []).length > 1 ? `<span class="count-badge">${it.photos.length} photos</span>` : ""}</div>
+        <div class="thumb">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : ICON_BOX}
+          ${it.photos.length > 1 ? `<span class="count-badge">${it.photos.length} photos</span>` : ""}</div>
         <div class="card-body">
           <div class="card-name">${esc(it.name)}</div>
           <div class="card-meta">${it.location ? `<span class="bin">${esc(it.location)}</span>` : ""}${it.sku ? `<span class="mono">${esc(it.sku)}</span>` : ""}</div>
@@ -497,21 +553,21 @@ label.f textarea { min-height: 70px; resize: vertical; }
   }
 
   function moveRows(moves, showItem) {
-    if (!moves.length) return "";
     let out = "", lastDay = "";
     for (const m of moves) {
       const d = dayKey(m.at);
       if (d !== lastDay) { out += `<div class="day">${isToday(m.at) ? "Today" : esc(d)}</div>`; lastDay = d; }
       const cls = m.type === "in" ? "d-in" : m.type === "out" ? "d-out" : "d-count";
       const label = m.type === "in" ? "Booked in" : m.type === "out" ? "Booked out" : "Stocktake";
-      const exists = S.items.has(m.itemId);
+      const exists = m.itemId && S.items.has(m.itemId);
       const title = showItem
         ? (exists ? `<button class="linkish" type="button" data-item="${esc(m.itemId)}">${esc(m.itemName)}</button>` : esc(m.itemName) + ' <span class="status">(deleted)</span>')
         : label;
-      const detail = [showItem ? label : "", m.venue ? (m.type === "in" ? "from " : "to ") + m.venue : "", m.reason, m.ref ? "Ref " + m.ref : "", m.note].filter(Boolean).map(esc).join(" · ");
+      const detail = [showItem ? label : "", m.venue ? (m.type === "in" ? "from " : "to ") + m.venue : "", m.reason, m.ref ? "Ref " + m.ref : "", m.note, who(m)]
+        .filter(Boolean).map(esc).join(" · ");
       out += `<div class="log-row">
         <div class="log-when">${timeOf(m.at)}</div>
-        <div class="log-what"><div class="t">${title}</div><div class="d">${detail} · ${esc(who(m.by))}</div></div>
+        <div class="log-what"><div class="t">${title}</div><div class="d">${detail}</div></div>
         <div class="log-delta ${cls}">${m.type === "count" ? "= " + fmtQty(m.balance) : signed(m.delta)}<small>${m.type === "count" ? "was " + fmtQty(m.balance - m.delta) : "bal " + fmtQty(m.balance)} ${esc(m.unit || "")}</small></div>
       </div>`;
     }
@@ -520,52 +576,49 @@ label.f textarea { min-height: 70px; resize: vertical; }
 
   const actList = () => S.moves.filter((m) => (S.act === "all" || m.type === S.act) && (!S.venue || m.venue === S.venue));
   function renderActivity() {
-    const opts = [["all", "All"], ["in", "Booked in"], ["out", "Booked out"], ["count", "Stocktakes"]];
-    $("#actFilters").innerHTML = opts.map(([k, l]) => `<button class="chip" type="button" data-act="${k}" aria-pressed="${S.act === k}">${l}</button>`).join("")
-      + `<span class="spacer"></span>${downloads && S.moves.length ? `<button class="btn ghost" type="button" id="exportMoves">Export CSV</button>` : ""}
-      <span class="count">Latest ${S.moves.length} moves</span>`;
     const used = [...new Set(S.moves.map((m) => m.venue).filter(Boolean))].sort();
     if (S.venue && !used.includes(S.venue)) S.venue = "";
-    const vs = used.length ? `<select id="actVenue" aria-label="Filter by venue"><option value="">All venues</option>${used.map((v) => `<option ${S.venue === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>` : "";
-    $("#actFilters").querySelector(".spacer").insertAdjacentHTML("afterend", vs);
+    const opts = [["all", "All"], ["in", "Booked in"], ["out", "Booked out"], ["count", "Stocktakes"]];
+    $("#actFilters").innerHTML = opts.map(([k, l]) => `<button class="chip" type="button" data-act="${k}" aria-pressed="${S.act === k}">${l}</button>`).join("")
+      + `<span class="spacer"></span>`
+      + (used.length ? `<select id="actVenue" aria-label="Filter by venue"><option value="">All venues</option>${used.map((v) => `<option ${S.venue === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>` : "")
+      + (S.moves.length ? `<button class="btn ghost" type="button" id="exportMoves">Export CSV</button>` : "")
+      + `<span class="count">Latest ${S.moves.length} moves</span>`;
     const list = actList();
     $("#log").innerHTML = !S.loaded
       ? `<div class="empty"><h2>Loading…</h2></div>`
       : list.length ? `<div class="log">${moveRows(list, true)}</div>`
-      : `<div class="empty"><h2>No movements yet</h2><p>Every time stock is booked in, booked out or counted, it’s logged here with who did it, when, and the venue or docket reference.</p></div>`;
-    resolveNames(list.map((m) => m.by));
+      : `<div class="empty"><h2>No movements yet</h2><p>Every time stock is booked in, booked out or counted, it’s logged here with who did it, when, and which venue it went to.</p></div>`;
   }
 
   function renderItemSheet(it) {
-    const photos = it.photos || [];
     const reasons = REASONS[S.moveType];
-    const hist = S.itemMovesFor === it.id ? S.itemMoves : [];
+    const hist = S.itemMovesFor === it.id ? S.itemMoves : null;
     return `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
       <div class="sheet-head gutter"><h2 id="sheetTitle">${esc(it.name)}</h2>
         <button class="btn ghost" type="button" data-close aria-label="Close">✕</button></div>
       <div class="sheet-body gutter">
         <div class="section"><h3>Photos</h3>
           <div class="photos">
-            ${photos.map((p) => `<div class="photo"><button type="button" data-zoom="${esc(p)}" style="all:unset;display:block;width:100%;height:100%;cursor:zoom-in"><img src="${blobUrl(p)}" alt="Photo of ${esc(it.name)}" loading="lazy"></button>
-              ${S.canWrite ? `<button class="x" type="button" data-rmphoto="${esc(p)}" aria-label="Remove photo">×</button>` : ""}</div>`).join("")}
-            ${assets && S.canWrite ? `<button class="add-photo" type="button" data-cam="item">${ICON_CAM}Take photo</button>
-              <button class="add-photo" type="button" data-pick="item">${ICON_IMG}Choose from library</button>` : ""}
-            ${!photos.length && !(assets && S.canWrite) ? `<p class="status">No photos yet.</p>` : ""}
+            ${it.photos.map((p) => { const src = photoSrc(p); return `<div class="photo"><button type="button" class="zoom" data-zoom="${esc(p)}">${src ? `<img src="${esc(src)}" alt="Photo of ${esc(it.name)}" loading="lazy">` : ""}</button>
+              <button class="x" type="button" data-rmphoto="${esc(p)}" aria-label="Remove photo">×</button></div>`; }).join("")}
+            <button class="add-photo" type="button" data-cam="item">${ICON_CAM}Take photo</button>
+            <button class="add-photo" type="button" data-pick="item">${ICON_IMG}Choose from library</button>
           </div>
-          ${S.busy ? `<p class="status">Uploading…</p>` : ""}
+          ${S.busy === "photo" ? `<p class="status">Uploading…</p>` : ""}
         </div>
 
         <div class="facts">
           <div class="fact big"><span>On hand</span><b>${fmtQty(it.qty)}</b> <span style="display:inline">${esc(it.unit || "each")}</span> ${pill(it)}</div>
           <div class="fact"><span>Bin location</span><b>${it.location ? `<span class="bin" style="font-size:15px">${esc(it.location)}</span>` : "Not set"}</b>
-            <span style="margin-top:8px">Reorder at</span><b class="num">${Number(it.minQty) ? fmtQty(it.minQty) + " " + esc(it.unit || "") : "Not set"}</b></div>
+            <span style="margin-top:8px">Reorder at</span><b class="num">${it.minQty ? fmtQty(it.minQty) + " " + esc(it.unit || "") : "Not set"}</b></div>
           <div class="fact"><span>SKU / code</span><b class="mono">${esc(it.sku) || "—"}</b></div>
           <div class="fact"><span>Category</span><b>${esc(it.category) || "—"}</b></div>
           ${it.supplier ? `<div class="fact" style="grid-column:1/-1"><span>Supplier</span><b>${esc(it.supplier)}</b></div>` : ""}
         </div>
         ${it.notes ? `<div class="notes">${esc(it.notes)}</div>` : ""}
 
-        ${S.canWrite ? `<form class="move" id="moveForm" autocomplete="off">
+        <form class="move" id="moveForm" autocomplete="off">
           <div class="seg" role="group" aria-label="Movement type">
             <button type="button" data-t="in" aria-pressed="${S.moveType === "in"}">Book in</button>
             <button type="button" data-t="out" aria-pressed="${S.moveType === "out"}">Book out</button>
@@ -573,29 +626,29 @@ label.f textarea { min-height: 70px; resize: vertical; }
           </div>
           <label class="f" for="mvQty">${S.moveType === "count" ? "Counted on the shelf" : "Quantity"} (${esc(it.unit || "each")})
             <div class="stepper"><button type="button" data-step="-1" aria-label="Less">−</button>
-            <input id="mvQty" type="number" inputmode="decimal" min="0" step="any" value="${S.moveType === "count" ? fmtQty(it.qty).replace(/,/g, "") : 1}" required>
+            <input id="mvQty" type="number" inputmode="decimal" min="0" step="any" value="${S.moveType === "count" ? String(it.qty) : 1}" required>
             <button type="button" data-step="1" aria-label="More">+</button></div></label>
-          ${S.moveType === "out" ? `<label class="f" for="mvVenue">Venue <span class="req">*</span><select id="mvVenue" required>${venueOptions(lastVenue())}</select></label>`
+          ${S.moveType === "out" ? `<label class="f" for="mvVenue">Venue <span class="req">*</span><select id="mvVenue" required>${venueOptions(store.get("srg-venue"))}</select></label>`
             : S.moveType === "in" ? `<label class="f" for="mvVenue">From venue<select id="mvVenue">${venueOptions("", "Not from a venue")}</select></label>` : ""}
           <div class="row2">
             <label class="f" for="mvReason">Reason<select id="mvReason">${reasons.map((r) => `<option>${esc(r)}</option>`).join("")}</select></label>
             <label class="f" for="mvRef">${S.moveType === "out" ? "Docket no." : S.moveType === "in" ? "PO / invoice no." : "Reference"}
-              <input id="mvRef" type="text" placeholder="optional"></label>
+              <input id="mvRef" type="text" maxlength="100" placeholder="optional"></label>
           </div>
-          <label class="f" for="mvNote">Note<input id="mvNote" type="text" placeholder="optional"></label>
+          <label class="f" for="mvNote">Note<input id="mvNote" type="text" maxlength="500" placeholder="optional"></label>
           <div class="preview" id="mvPreview"></div>
-          <button class="btn primary" type="submit" ${S.busy ? "disabled" : ""}>${S.moveType === "in" ? "Book in" : S.moveType === "out" ? "Book out" : "Save count"}</button>
-        </form>` : `<p class="notice">You can view stock but not change it. Ask the page owner for Contributor access.</p>`}
+          <button class="btn primary" type="submit" ${S.busy ? "disabled" : ""}>${S.busy === "move" ? "Saving…" : S.moveType === "in" ? "Book in" : S.moveType === "out" ? "Book out" : "Save count"}</button>
+        </form>
 
         <div class="section"><h3>History</h3>
-          ${hist.length ? `<div class="hist">${moveRows(hist, false)}</div>` : `<p class="status">${S.itemMovesFor === it.id ? "No movements recorded yet." : "Loading history…"}</p>`}
+          ${hist ? (hist.length ? `<div class="hist">${moveRows(hist, false)}</div>` : `<p class="status">No movements recorded yet.</p>`) : `<p class="status">Loading history…</p>`}
         </div>
 
-        ${S.canWrite ? `<div class="section"><h3>Item</h3>
-          ${S.confirmDelete ? `<div class="confirm"><b>Delete “${esc(it.name)}”?</b><span>It disappears from the stock list. Its past movements stay in Ins &amp; outs.</span>
+        <div class="section"><h3>Item</h3>
+          ${S.confirmDelete ? `<div class="confirm"><b>Delete “${esc(it.name)}”?</b><span>It disappears from the stock list and its photos are deleted. Its past movements stay in Ins &amp; outs.</span>
             <div class="foot-actions"><button class="btn danger" type="button" data-delete-yes>Delete item</button><button class="btn" type="button" data-delete-no>Keep it</button></div></div>`
           : `<div class="foot-actions"><button class="btn" type="button" data-edit="${esc(it.id)}">Edit details</button><button class="btn danger" type="button" data-delete>Delete…</button></div>`}
-        </div>` : ""}
+        </div>
       </div></div>`;
   }
 
@@ -603,9 +656,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
     const editing = !!it;
     const v = it || { unit: "each" };
     const arr = itemsArr();
-    const cats = [...new Set(arr.map((i) => i.category).filter(Boolean))].sort();
-    const locs = [...new Set(arr.map((i) => i.location).filter(Boolean))].sort();
-    const sups = [...new Set(arr.map((i) => i.supplier).filter(Boolean))].sort();
+    const dl = (key) => [...new Set(arr.map((i) => i[key]).filter(Boolean))].sort().map((c) => `<option value="${esc(c)}">`).join("");
     return `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="formTitle">
       <div class="sheet-head gutter"><h2 id="formTitle">${editing ? "Edit item" : "Add stock item"}</h2>
         <button class="btn ghost" type="button" data-close aria-label="Close">✕</button></div>
@@ -613,8 +664,8 @@ label.f textarea { min-height: 70px; resize: vertical; }
         ${!editing ? `<div class="section"><h3>Photos</h3>
           <div class="photos">
             ${S.pending.map((p, i) => `<div class="photo" style="width:120px"><img src="${p.url}" alt=""><button class="x" type="button" data-rmpending="${i}" aria-label="Remove photo">×</button></div>`).join("")}
-            ${assets ? `<button class="add-photo" type="button" data-cam="form" style="width:120px">${ICON_CAM}Take photo</button>
-            <button class="add-photo" type="button" data-pick="form" style="width:120px">${ICON_IMG}Choose</button>` : `<p class="status">Photo uploads aren’t available with your access level.</p>`}
+            <button class="add-photo" type="button" data-cam="form" style="width:120px">${ICON_CAM}Take photo</button>
+            <button class="add-photo" type="button" data-pick="form" style="width:120px">${ICON_IMG}Choose</button>
           </div></div>` : ""}
         <label class="f" for="fName">Item name <span class="req">*</span><input id="fName" required maxlength="140" value="${esc(v.name)}" placeholder="e.g. Riedel Pinot glass 700ml"></label>
         <div class="row2">
@@ -627,14 +678,14 @@ label.f textarea { min-height: 70px; resize: vertical; }
         </div>
         <div class="row2">
           ${!editing ? `<label class="f" for="fQty">Quantity on hand now<input id="fQty" type="number" inputmode="decimal" min="0" step="any" value="0"></label>` : ""}
-          <label class="f" for="fMin">Reorder at (low-stock level)<input id="fMin" type="number" inputmode="decimal" min="0" step="any" value="${esc(v.minQty ?? "")}" placeholder="optional"></label>
+          <label class="f" for="fMin">Reorder at (low-stock level)<input id="fMin" type="number" inputmode="decimal" min="0" step="any" value="${editing && v.minQty ? esc(v.minQty) : ""}" placeholder="optional"></label>
         </div>
         <label class="f" for="fSup">Supplier<input id="fSup" list="dlSup" maxlength="100" value="${esc(v.supplier)}" placeholder="optional"></label>
         <label class="f" for="fNotes">Notes<textarea id="fNotes" maxlength="2000" placeholder="Pack size, condition, which venues use it…">${esc(v.notes)}</textarea></label>
-        <datalist id="dlCat">${cats.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
-        <datalist id="dlLoc">${locs.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
+        <datalist id="dlCat">${dl("category")}</datalist>
+        <datalist id="dlLoc">${dl("location")}</datalist>
         <datalist id="dlUnit">${UNITS.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
-        <datalist id="dlSup">${sups.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
+        <datalist id="dlSup">${dl("supplier")}</datalist>
         <div class="foot-actions">
           <button class="btn primary" type="submit" ${S.busy ? "disabled" : ""}>${S.busy ? "Saving…" : editing ? "Save changes" : "Add to stock"}</button>
           <button class="btn" type="button" data-close>Cancel</button>
@@ -645,26 +696,22 @@ label.f textarea { min-height: 70px; resize: vertical; }
   function renderOverlay() {
     const ov = $("#overlay");
     if (!S.open) { ov.hidden = true; ov.innerHTML = ""; return; }
-    let html = "";
+    let html;
     if (S.open.kind === "item") {
       const it = S.items.get(S.open.id);
-      if (!it) { closeOverlay(); return; }
+      if (!it) { S.open = null; ov.hidden = true; ov.innerHTML = ""; return; }
       html = renderItemSheet(it);
-    } else {
-      html = renderForm(S.open.id ? S.items.get(S.open.id) : null);
-    }
-    // keep form values across re-renders
+    } else html = renderForm(S.open.id ? S.items.get(S.open.id) : null);
     const keep = {};
     ov.querySelectorAll("input[id],select[id],textarea[id]").forEach((el) => { if (el.type !== "file") keep[el.id] = el.value; });
     const scroll = ov.querySelector(".sheet")?.scrollTop || 0;
     const focusId = document.activeElement && ov.contains(document.activeElement) ? document.activeElement.id : null;
     ov.innerHTML = html; ov.hidden = false;
-    for (const [id, val] of Object.entries(keep)) { const el = document.getElementById(id); if (el && !(S.fresh || []).includes(id)) el.value = val; }
+    for (const [id, val] of Object.entries(keep)) { const el = document.getElementById(id); if (el && !S.fresh.includes(id)) el.value = val; }
     S.fresh = [];
     const sh = ov.querySelector(".sheet"); if (sh) sh.scrollTop = scroll;
     if (focusId) document.getElementById(focusId)?.focus();
     updatePreview();
-    if (S.open.kind === "item") resolveNames(S.itemMoves.map((m) => m.by));
   }
 
   function updatePreview() {
@@ -672,14 +719,15 @@ label.f textarea { min-height: 70px; resize: vertical; }
     const it = S.items.get(S.open.id); if (!it) return;
     const n = parseFloat($("#mvQty").value);
     if (!(n >= 0)) { p.textContent = "Enter a quantity."; return; }
-    const cur = Number(it.qty) || 0, u = esc(it.unit || "");
-    const after = S.moveType === "in" ? cur + n : S.moveType === "out" ? cur - n : n;
+    const u = esc(it.unit || "");
+    const after = S.moveType === "in" ? it.qty + n : S.moveType === "out" ? it.qty - n : n;
     p.innerHTML = after < 0 && S.moveType === "out"
-      ? `<span style="color:var(--out)">Only ${fmtQty(cur)} ${u} on hand.</span>`
-      : `On hand goes from <b>${fmtQty(cur)}</b> to <b>${fmtQty(after)}</b> ${u}${S.moveType === "count" ? ` (${signed(after - cur)})` : ""}.`;
+      ? `<span style="color:var(--out)">Only ${fmtQty(it.qty)} ${u} on hand.</span>`
+      : `On hand goes from <b>${fmtQty(it.qty)}</b> to <b>${fmtQty(after)}</b> ${u}${S.moveType === "count" ? ` (${signed(after - it.qty)})` : ""}.`;
   }
 
   function renderLists() {
+    if (!S.uid) return;
     renderSummary();
     if (S.tab === "stock") { renderFilters(); renderGrid(); } else renderActivity();
     renderOverlay();
@@ -689,42 +737,109 @@ label.f textarea { min-height: 70px; resize: vertical; }
       $("#tab-" + t).setAttribute("aria-selected", String(S.tab === t));
       $("#view-" + t).hidden = S.tab !== t;
     }
-    $("#addBtn").hidden = !S.canWrite || !S.loaded;
-    const st = $("#status");
-    st.textContent = S.offline ? "Offline preview" : !S.loaded ? (S.stale ? "Still connecting…" : "Connecting…") : S.canWrite ? "Live · shared with your team" : "Live · view only";
+    $("#status").textContent = S.netErr ? "Offline · showing last loaded stock" : S.loaded ? `Signed in as ${S.name}` : "Loading…";
+    $("#notice").hidden = !(S.netErr && S.loaded);
+    $("#notice").textContent = "You're offline. Changes can't be saved until you're back online.";
     renderLists();
+  }
+
+  // ---------- sign in ----------
+  const LOGO = document.querySelector("#logoTpl").innerHTML;
+  function showAuth(mode, msg) {
+    $("#app").hidden = true;
+    const a = $("#auth"); a.hidden = false;
+    const head = `<div class="auth-logo">${LOGO}<span>Warehouse</span></div>`;
+    if (mode === "setup") {
+      a.innerHTML = `<div class="auth-card">${head}<h2>Almost ready</h2>
+        <p>This copy of the app isn't connected to a database yet. Add your Supabase project URL and anon key to <code>config.js</code>, then reload. The README in the GitHub repo has step-by-step instructions.</p></div>`;
+    } else if (mode === "name") {
+      a.innerHTML = `<form class="auth-card" id="nameForm">${head}<h2>What's your name?</h2>
+        <p>It's shown in the stock log next to everything you book in or out.</p>
+        <label class="f" for="nmName">Your name<input id="nmName" required maxlength="80" autocomplete="name" placeholder="e.g. Sam Taylor"></label>
+        <p class="auth-err" id="authErr" ${msg ? "" : "hidden"}>${esc(msg)}</p>
+        <button class="btn primary" type="submit">Continue</button>
+        <button class="btn ghost" type="button" data-signout>Sign out</button></form>`;
+      setTimeout(() => $("#nmName")?.focus(), 30);
+    } else {
+      a.innerHTML = `<form class="auth-card" id="signinForm">${head}<h2>Sign in</h2>
+        <p>Use the email and password your manager set up for you.</p>
+        <label class="f" for="siEmail">Email<input id="siEmail" type="email" required autocomplete="username" inputmode="email" value="${esc(store.get("srg-email"))}"></label>
+        <label class="f" for="siPass">Password<input id="siPass" type="password" required autocomplete="current-password"></label>
+        <p class="auth-err" id="authErr" ${msg ? "" : "hidden"}>${esc(msg)}</p>
+        <button class="btn primary" type="submit" id="siBtn">Sign in</button>
+        <p class="status">Forgotten your password? Ask your manager to reset it.</p></form>`;
+      setTimeout(() => (store.get("srg-email") ? $("#siPass") : $("#siEmail"))?.focus(), 30);
+    }
+  }
+  async function signIn() {
+    const email = $("#siEmail").value.trim(), password = $("#siPass").value;
+    const btn = $("#siBtn"); btn.disabled = true; btn.textContent = "Signing in…";
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      const m = /invalid login|invalid credentials/i.test(error.message) ? "That email and password don't match. Check them and try again."
+        : /fetch|network/i.test(error.message) ? "No connection. Check your Wi-Fi or mobile data." : error.message;
+      showAuth("signin", m); $("#siEmail").value = email;
+      return;
+    }
+    store.set("srg-email", email);
+  }
+  async function saveName() {
+    const name = $("#nmName").value.trim(); if (!name) return;
+    const { error } = await sb.from("profiles").upsert({ id: S.uid, full_name: name });
+    if (error) { showAuth("name", errMsg(error)); return; }
+    S.name = name; startApp();
+  }
+
+  let sessionUid;
+  async function onSession(session) {
+    const uid = session?.user?.id || null;
+    if (uid === sessionUid && uid) return;
+    sessionUid = uid;
+    if (!uid) {
+      S.uid = null; S.loaded = false; S.items = new Map(); S.moves = []; S.open = null;
+      if (channel) { sb.removeChannel(channel); channel = null; }
+      clearInterval(pollT);
+      showAuth("signin");
+      return;
+    }
+    S.uid = uid; S.email = session.user.email || "";
+    const { data } = await sb.from("profiles").select("full_name").eq("id", uid).maybeSingle();
+    S.name = (data && data.full_name) || "";
+    if (!S.name) { showAuth("name"); return; }
+    startApp();
+  }
+  function startApp() {
+    $("#auth").hidden = true; $("#auth").innerHTML = ""; $("#app").hidden = false;
+    S.loaded = false; route(); refresh();
+    if (!channel) {
+      channel = sb.channel("stock")
+        .on("postgres_changes", { event: "*", schema: "public", table: "items" }, soon)
+        .on("postgres_changes", { event: "*", schema: "public", table: "moves" }, soon)
+        .subscribe();
+    }
+    clearInterval(pollT);
+    pollT = setInterval(() => { if (document.visibilityState === "visible") refresh(); }, 60000);
   }
 
   // ---------- overlay control ----------
   function openItem(id) {
     S.open = { kind: "item", id }; S.confirmDelete = false; S.moveType = "out";
-    subscribeItemMoves(id);
+    S.itemMoves = []; S.itemMovesFor = null; S.fresh = ["mvQty", "mvVenue", "mvReason", "mvRef", "mvNote"];
     render();
+    loadItemMoves(id).then(renderOverlay).catch(() => {});
   }
   function openForm(id) {
     S.pending.forEach((p) => URL.revokeObjectURL(p.url));
     S.pending = []; S.open = { kind: "form", id: id || null };
-    $("#overlay").innerHTML = ""; // fresh form values
+    $("#overlay").innerHTML = "";
     render();
     setTimeout(() => $("#fName")?.focus(), 30);
   }
   function closeOverlay() {
     if (S.open?.kind === "form" && S.open.id) { openItem(S.open.id); return; }
     S.open = null; S.pending.forEach((p) => URL.revokeObjectURL(p.url)); S.pending = [];
-    if (unsubItemMoves) { unsubItemMoves(); unsubItemMoves = null; }
     S.itemMovesFor = null; S.itemMoves = [];
-    $("#overlay").innerHTML = "";
     render();
-  }
-  function subscribeItemMoves(id) {
-    if (S.itemMovesFor === id && unsubItemMoves) return;
-    if (unsubItemMoves) unsubItemMoves();
-    S.itemMoves = []; S.itemMovesFor = null;
-    if (!db) return;
-    unsubItemMoves = db.collection("moves").where("itemId", "==", id).orderBy("at", "desc").limit(100).onSnapshot(
-      (snap) => { S.itemMoves = snap.docs.map((d) => ({ id: d.id, ...d.data() })); S.itemMovesFor = id; if (S.open?.id === id) renderOverlay(); },
-      () => { S.itemMovesFor = id; }
-    );
   }
 
   // ---------- actions ----------
@@ -732,111 +847,110 @@ label.f textarea { min-height: 70px; resize: vertical; }
     const val = (id) => ($("#" + id)?.value || "").trim();
     const name = val("fName");
     if (!name) { toast("Give the item a name.", true); return; }
-    const minRaw = val("fMin");
     const data = {
-      name, sku: val("fSku"), category: val("fCat"), location: val("fLoc").toUpperCase(),
-      unit: val("fUnit") || "each", minQty: minRaw === "" ? 0 : Math.max(0, parseFloat(minRaw) || 0),
-      supplier: val("fSup"), notes: val("fNotes"), updatedAt: new Date().toISOString(), updatedBy: S.uid,
+      name, sku: val("fSku"), category: val("fCat"), location: val("fLoc").toUpperCase(), unit: val("fUnit") || "each",
+      min_qty: Math.max(0, parseFloat(val("fMin")) || 0), supplier: val("fSup"), notes: val("fNotes"),
     };
-    S.busy = true; render();
+    S.busy = true; renderOverlay();
     try {
       if (S.open.id) {
-        await db.doc("items/" + S.open.id).update(data);
+        must(await sb.from("items").update(data).eq("id", S.open.id));
         toast("Saved");
-        const id = S.open.id; S.busy = false; openItem(id); return;
+        const id = S.open.id; S.busy = false; await refresh(); openItem(id); return;
       }
+      const row = must(await sb.from("items").insert(data).select().single());
       const photos = [];
-      for (const p of S.pending) { try { photos.push(await uploadPhoto(p.blob)); } catch (e) { toast(errMsg(e), true); } }
+      for (const p of S.pending) { try { photos.push(await uploadPhoto(row.id, p.blob)); } catch (e) { fail(e); } }
+      if (photos.length) must(await sb.from("items").update({ photos }).eq("id", row.id));
       const qty = Math.max(0, parseFloat(val("fQty")) || 0);
-      const ref = db.collection("items").doc();
-      const now = data.updatedAt;
-      await ref.set({ ...data, qty, photos, createdAt: now, createdBy: S.uid });
-      if (qty > 0) {
-        await db.collection("moves").doc().set({ itemId: ref.id, itemName: name, sku: data.sku, unit: data.unit, location: data.location,
-          type: "in", delta: qty, qty, balance: qty, reason: "Opening stock", ref: "", note: "", by: S.uid, at: now });
-      }
+      if (qty > 0) must(await sb.rpc("book_stock", { p_item: row.id, p_type: "in", p_qty: qty, p_reason: "Opening stock" }));
       S.busy = false; toast(`Added ${name}`);
       S.pending.forEach((p) => URL.revokeObjectURL(p.url)); S.pending = [];
-      S.items.set(ref.id, { id: ref.id, ...data, qty, photos });
-      openItem(ref.id);
-    } catch (e) { S.busy = false; onWriteError(e); }
+      await refresh(); openItem(row.id);
+    } catch (e) { S.busy = false; fail(e); renderOverlay(); }
   }
 
   async function submitMove() {
     const it = S.items.get(S.open.id); if (!it) return;
+    const type = S.moveType;
     const n = parseFloat($("#mvQty").value);
-    if (!(n >= 0) || (S.moveType !== "count" && n === 0)) { toast("Enter a quantity above zero.", true); return; }
+    if (!(n >= 0) || (type !== "count" && n === 0)) { toast("Enter a quantity above zero.", true); return; }
     const reason = $("#mvReason").value, ref = $("#mvRef").value.trim(), note = $("#mvNote").value.trim();
-    const venue = S.moveType === "count" ? "" : ($("#mvVenue")?.value || "");
-    if (S.moveType === "out" && !venue) { toast("Choose which venue the stock is going to.", true); $("#mvVenue")?.focus(); return; }
-    if (venue === VENUE_OTHER && !note) { toast("Add the destination in the note.", true); $("#mvNote")?.focus(); return; }
-    if (S.moveType === "out") { try { localStorage.setItem("srg-venue", venue); } catch (_) {} }
-    S.busy = true; renderOverlay();
+    const venue = type === "count" ? "" : ($("#mvVenue")?.value || "");
+    if (type === "out" && !venue) { toast("Choose which venue the stock is going to.", true); $("#mvVenue")?.focus(); return; }
+    if (venue === VENUE_OTHER && !note) { toast("Add where it went in the note.", true); $("#mvNote")?.focus(); return; }
+    if (type === "out") store.set("srg-venue", venue);
+    S.busy = "move"; renderOverlay();
     try {
-      const r = await recordMove(it.id, S.moveType, n, reason, ref, note, venue);
-      toast(S.moveType === "count" ? `Count saved: ${fmtQty(r.bal)} ${it.unit || ""}` : `${S.moveType === "in" ? "Booked in" : "Booked out"} ${fmtQty(n)}${venue && S.moveType === "out" ? " to " + venue : ""} · now ${fmtQty(r.bal)} on hand`);
-      ["mvRef", "mvNote"].forEach((id) => { const el = $("#" + id); if (el) el.value = ""; });
-      const q = $("#mvQty"); if (q) q.value = S.moveType === "count" ? r.bal : 1;
-    } catch (e) { onWriteError(e); }
-    S.busy = false; renderOverlay();
+      const m = must(await sb.rpc("book_stock", { p_item: it.id, p_type: type, p_qty: n, p_venue: venue, p_reason: reason, p_ref: ref, p_note: note }));
+      toast(type === "count" ? `Count saved: ${fmtQty(m.balance)} ${it.unit}` : `${type === "in" ? "Booked in" : "Booked out"} ${fmtQty(n)}${type === "out" ? " to " + venue : ""} · now ${fmtQty(m.balance)} on hand`);
+      S.fresh = ["mvQty", "mvRef", "mvNote"];
+      S.busy = false;
+      await refresh();
+    } catch (e) { S.busy = false; fail(e); renderOverlay(); }
   }
 
   async function addPhotosToItem(files) {
     const id = S.open?.id; if (!id || !files.length) return;
-    S.busy = true; renderOverlay();
-    const ids = [];
-    for (const f of files) { try { ids.push(await uploadPhoto(f)); } catch (e) { toast(errMsg(e), true); } }
+    S.busy = "photo"; renderOverlay();
+    const paths = [];
+    for (const f of files) { try { paths.push(await uploadPhoto(id, f)); } catch (e) { fail(e); } }
     try {
-      if (ids.length) {
-        const cur = (await db.doc("items/" + id).get()).data();
-        await db.doc("items/" + id).update({ photos: [...(cur?.photos || []), ...ids], updatedAt: new Date().toISOString(), updatedBy: S.uid });
-        toast(ids.length > 1 ? `${ids.length} photos added` : "Photo added");
+      if (paths.length) {
+        const cur = must(await sb.from("items").select("photos").eq("id", id).single());
+        must(await sb.from("items").update({ photos: [...(cur.photos || []), ...paths] }).eq("id", id));
+        toast(paths.length > 1 ? `${paths.length} photos added` : "Photo added");
       }
-    } catch (e) { onWriteError(e); }
-    S.busy = false; renderOverlay();
+    } catch (e) { fail(e); }
+    S.busy = false; await refresh();
   }
 
-  async function removePhoto(assetId) {
+  async function removePhoto(path) {
     const id = S.open?.id; if (!id) return;
     try {
-      const cur = (await db.doc("items/" + id).get()).data();
-      await db.doc("items/" + id).update({ photos: (cur?.photos || []).filter((p) => p !== assetId), updatedAt: new Date().toISOString(), updatedBy: S.uid });
+      const cur = must(await sb.from("items").select("photos").eq("id", id).single());
+      must(await sb.from("items").update({ photos: (cur.photos || []).filter((p) => p !== path) }).eq("id", id));
+      sb.storage.from(BUCKET).remove([path]);
       toast("Photo removed");
-      if (assets) assets.delete(assetId).catch(() => {});
-    } catch (e) { onWriteError(e); }
+      await refresh();
+    } catch (e) { fail(e); }
   }
 
   async function deleteItem() {
     const id = S.open?.id; const it = S.items.get(id); if (!it) return;
     try {
-      await db.doc("items/" + id).delete();
+      must(await sb.from("items").delete().eq("id", id));
+      if (it.photos.length) sb.storage.from(BUCKET).remove(it.photos);
       toast(`Deleted ${it.name}`);
-      S.items.delete(id); closeOverlay();
-    } catch (e) { onWriteError(e); }
+      S.open = null; await refresh();
+    } catch (e) { fail(e); }
   }
 
-  const csvCell = (v) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  async function exportCsv(kind) {
-    if (!downloads) return;
-    let rows, name;
+  const csvCell = (v) => { const s = String(v ?? ""); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  function exportCsv(kind) {
     const stamp = new Date().toISOString().slice(0, 10);
+    let rows, name;
     if (kind === "stock") {
       rows = [["Name", "SKU", "Category", "Bin location", "On hand", "Unit", "Reorder at", "Status", "Supplier", "Notes", "Last changed"]]
-        .concat(filtered().map((i) => [i.name, i.sku, i.category, i.location, i.qty, i.unit, i.minQty || "", { ok: "OK", low: "Low", none: "Out" }[stockState(i)], i.supplier, i.notes, i.updatedAt]));
+        .concat(filtered().map((i) => [i.name, i.sku, i.category, i.location, i.qty, i.unit, i.minQty || "", { ok: "OK", low: "Low", none: "Out" }[stockState(i)], i.supplier, i.notes,
+          i.updatedAt ? new Date(i.updatedAt).toLocaleString("en-AU") : ""]));
       name = `srg-stock-${stamp}.csv`;
     } else {
       rows = [["Date", "Time", "Item", "SKU", "Type", "Change", "Balance", "Unit", "Venue", "Reason", "Reference", "Note", "By"]]
         .concat(actList().map((m) => [new Date(m.at).toLocaleDateString("en-AU"), timeOf(m.at), m.itemName, m.sku,
-          { in: "In", out: "Out", count: "Stocktake" }[m.type], m.delta, m.balance, m.unit, m.venue || "", m.reason, m.ref, m.note, who(m.by)]));
+          { in: "In", out: "Out", count: "Stocktake" }[m.type], m.delta, m.balance, m.unit, m.venue, m.reason, m.ref, m.note, m.byName]));
       name = `srg-stock-movements-${stamp}.csv`;
     }
-    try { await downloads.save({ filename: name, data: rows.map((r) => r.map(csvCell).join(",")).join("\r\n") }); toast("Saved " + name); }
-    catch (e) { if (e?.code !== "declined") toast("Couldn't save the file here.", true); }
+    const blob = new Blob(["﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
 
   // ---------- events ----------
   let camTarget = "item";
-  async function handleFiles(files) {
+  function handleFiles(files) {
     files = [...files].filter((f) => f.type.startsWith("image/") || !f.type);
     if (!files.length) return;
     if (camTarget === "form") {
@@ -848,15 +962,16 @@ label.f textarea { min-height: 70px; resize: vertical; }
   $("#fileInput").addEventListener("change", (e) => { handleFiles(e.target.files); e.target.value = ""; });
 
   document.addEventListener("click", (e) => {
-    const t = e.target.closest("button, [data-item]");
     if (e.target.id === "overlay") { closeOverlay(); return; }
     if (e.target.closest("#lightbox")) { $("#lightbox").hidden = true; return; }
+    const t = e.target.closest("button");
     if (!t) return;
     const d = t.dataset;
+    if ("signout" in d) { sb.auth.signOut(); return; }
     if (t.id === "addBtn" || "add" in d) return openForm(null);
     if (d.tab) { location.hash = d.tab; return; }
     if (d.goto) { location.hash = d.goto; return; }
-    if ("only" in d && !t.closest(".log-row")) { S.only = S.only === d.only ? "" : d.only; if (S.tab !== "stock") location.hash = "stock"; render(); return; }
+    if ("only" in d) { S.only = S.only === d.only ? "" : d.only; if (S.tab !== "stock") location.hash = "stock"; render(); return; }
     if ("cat" in d) { S.cat = d.cat; render(); return; }
     if (d.act) { S.act = d.act; render(); return; }
     if (d.item) return openItem(d.item);
@@ -865,7 +980,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
     if (d.step) { const q = $("#mvQty"); q.value = Math.max(0, (parseFloat(q.value) || 0) + Number(d.step)); updatePreview(); return; }
     if (d.cam) { camTarget = d.cam; $("#camInput").click(); return; }
     if (d.pick) { camTarget = d.pick; $("#fileInput").click(); return; }
-    if (d.zoom) { $("#lbImg").src = blobUrl(d.zoom); $("#lightbox").hidden = false; return; }
+    if (d.zoom) { const src = photoSrc(d.zoom); if (src) { $("#lbImg").src = src; $("#lightbox").hidden = false; } return; }
     if (d.rmphoto) return removePhoto(d.rmphoto);
     if (d.rmpending) { const [p] = S.pending.splice(Number(d.rmpending), 1); if (p) URL.revokeObjectURL(p.url); renderOverlay(); return; }
     if (d.edit) return openForm(d.edit);
@@ -877,67 +992,47 @@ label.f textarea { min-height: 70px; resize: vertical; }
   });
   document.addEventListener("submit", (e) => {
     e.preventDefault();
+    if (e.target.id === "signinForm") return signIn();
+    if (e.target.id === "nameForm") return saveName();
     if (S.busy) return;
     if (e.target.id === "itemForm") saveForm();
     if (e.target.id === "moveForm") submitMove();
   });
   document.addEventListener("input", (e) => {
-    if (e.target.id === "q") { S.q = e.target.value; renderFilters(); renderGrid(); if (S.tab !== "stock") location.hash = "stock"; }
+    if (e.target.id === "q") { S.q = e.target.value; if (S.tab !== "stock") location.hash = "stock"; else { renderFilters(); renderGrid(); } }
     if (e.target.id === "mvQty") updatePreview();
   });
   document.addEventListener("change", (e) => {
-    if (e.target.id === "actVenue") { S.venue = e.target.value; renderActivity(); }
     if (e.target.id === "locSel") { S.loc = e.target.value; render(); }
-    if (e.target.id === "sortSel") { S.sort = e.target.value; try { localStorage.setItem("srg-sort", S.sort); } catch (_) {} render(); }
+    if (e.target.id === "sortSel") { S.sort = e.target.value; store.set("srg-sort", S.sort); render(); }
+    if (e.target.id === "actVenue") { S.venue = e.target.value; renderActivity(); }
   });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (!$("#lightbox").hidden) { $("#lightbox").hidden = true; return; }
     if (S.open) closeOverlay();
   });
-  // drag & drop photos onto an open item or the add form
-  document.addEventListener("dragover", (e) => { if (S.open && assets) e.preventDefault(); });
+  document.addEventListener("dragover", (e) => { if (S.open) e.preventDefault(); });
   document.addEventListener("drop", (e) => {
-    if (!S.open || !assets || !e.dataTransfer?.files?.length) return;
+    if (!S.open || !e.dataTransfer?.files?.length) return;
     e.preventDefault(); camTarget = S.open.kind === "form" ? "form" : "item"; handleFiles(e.dataTransfer.files);
   });
+  document.addEventListener("error", (e) => { if (e.target && e.target.tagName === "IMG") e.target.style.visibility = "hidden"; }, true);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+  window.addEventListener("online", refresh);
 
   function route() {
-    const h = location.hash.replace("#", "");
-    S.tab = h === "activity" ? "activity" : "stock";
-    render();
+    S.tab = location.hash === "#activity" ? "activity" : "stock";
+    if (S.uid) render();
   }
   window.addEventListener("hashchange", route);
-  document.addEventListener("error", (e) => { if (e.target && e.target.tagName === "IMG") e.target.style.visibility = "hidden"; }, true);
 
   // ---------- boot ----------
-  async function boot() {
-    try { const s = localStorage.getItem("srg-sort"); if (s) S.sort = s; } catch (_) {}
-    route();
-    if (!window.claude?.use) { S.offline = true; render(); return; }
-    const timer = setTimeout(() => { if (!S.loaded) { S.stale = true; render(); } }, 10000);
-    [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
-    if (!db) { clearTimeout(timer); S.offline = true; render(); return; }
-    if (user) {
-      S.uid = await user.id();
-      const cw = await user.can("data.write");
-      if (cw === false) S.canWrite = false;
-    }
-    window.claude.use("assets").then((a) => { assets = a; render(); });
-    window.claude.use("downloads").then((d) => { downloads = d; render(); });
-
-    db.collection("items").onSnapshot((snap) => {
-      S.items = new Map(snap.docs.map((d) => [d.id, { id: d.id, ...d.data() }]));
-      if (!snap.metadata.fromCache) { S.loaded = true; S.stale = false; clearTimeout(timer); }
-      else if (snap.size) S.loaded = true;
-      render();
-    }, (e) => { clearTimeout(timer); S.loaded = true; $("#notice").hidden = false; $("#notice").textContent = errMsg(e); render(); });
-
-    db.collection("moves").orderBy("at", "desc").limit(300).onSnapshot((snap) => {
-      S.moves = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      renderLists();
-    }, () => {});
-  }
-  boot();
+  if (!CFG.supabaseUrl || /YOUR-/.test(CFG.supabaseUrl) || !CFG.supabaseAnonKey || !window.supabase) { showAuth("setup"); return; }
+  sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+  // Supabase recommends not awaiting its own calls inside this callback, so hand off with setTimeout.
+  sb.auth.onAuthStateChange((_ev, session) => setTimeout(() => onSession(session), 0));
 })();
 </script>
+</body>
+</html>
