@@ -223,7 +223,7 @@ label.f textarea { min-height: 70px; resize: vertical; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 70; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: var(--r); box-shadow: var(--shadow); max-width: calc(100% - 32px); font-size: 14px; border-left: 3px solid var(--blue); }
 .toast.err { border-left-color: var(--orange); }
 @media (prefers-reduced-motion: no-preference) {
-  .sheet { animation: slide .18s ease-out; }
+  .sheet.enter { animation: slide .18s ease-out; }
   @keyframes slide { from { transform: translateX(24px); opacity: .6; } }
 }
 
@@ -409,7 +409,7 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
       const d = !error && data && data[i];
       urls.set(p, d && d.signedUrl ? { url: d.signedUrl, exp: Date.now() + 6 * 3600e3 - 120e3 } : { url: "", exp: Date.now() + 60e3 });
     });
-    renderLists();
+    renderLists(true);
   }
   async function shrink(file) {
     try {
@@ -447,11 +447,13 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
     const rows = must(await sb.from("moves").select("*").eq("item_id", id).order("created_at", { ascending: false }).limit(100));
     if (S.open?.id === id) { S.itemMoves = rows.map(mapMove); S.itemMovesFor = id; }
   }
+  const sig = () => JSON.stringify([S.loaded, S.netErr, [...S.items.values()], S.moves.map((m) => m.id), S.itemMovesFor, S.itemMoves.map((m) => m.id)]);
   let refreshing = null, again = false;
   async function refresh() {
     if (!sb || !S.uid) return;
     if (refreshing) { again = true; return refreshing; }
     refreshing = (async () => {
+      const before = sig();
       try {
         await Promise.all([loadItems(), loadMoves(), S.open?.kind === "item" ? loadItemMoves(S.open.id) : null]);
         S.loaded = true; S.netErr = false;
@@ -459,7 +461,7 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
         S.netErr = true;
         if (/JWT/i.test(e?.message || "")) { await sb.auth.signOut(); }
       }
-      render();
+      if (sig() !== before || S.overlayStale) render(true);
     })();
     await refreshing; refreshing = null;
     if (again) { again = false; refresh(); }
@@ -693,7 +695,7 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
       </form></div>`;
   }
 
-  function renderOverlay() {
+  function renderOverlay(bg) {
     const ov = $("#overlay");
     if (!S.open) { ov.hidden = true; ov.innerHTML = ""; return; }
     let html;
@@ -702,6 +704,11 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
       if (!it) { S.open = null; ov.hidden = true; ov.innerHTML = ""; return; }
       html = renderItemSheet(it);
     } else html = renderForm(S.open.id ? S.items.get(S.open.id) : null);
+    const opening = ov.hidden || !ov.firstElementChild;
+    // A background update must not rebuild the panel while someone is typing or has a picker open.
+    const ae = document.activeElement;
+    if (bg && !opening && ae && ov.contains(ae) && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) { S.overlayStale = true; return; }
+    S.overlayStale = false;
     const keep = {};
     ov.querySelectorAll("input[id],select[id],textarea[id]").forEach((el) => { if (el.type !== "file") keep[el.id] = el.value; });
     const scroll = ov.querySelector(".sheet")?.scrollTop || 0;
@@ -709,7 +716,8 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
     ov.innerHTML = html; ov.hidden = false;
     for (const [id, val] of Object.entries(keep)) { const el = document.getElementById(id); if (el && !S.fresh.includes(id)) el.value = val; }
     S.fresh = [];
-    const sh = ov.querySelector(".sheet"); if (sh) sh.scrollTop = scroll;
+    const sh = ov.querySelector(".sheet");
+    if (sh) { sh.scrollTop = scroll; if (opening) sh.classList.add("enter"); }
     if (focusId) document.getElementById(focusId)?.focus();
     updatePreview();
   }
@@ -726,13 +734,13 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
       : `On hand goes from <b>${fmtQty(it.qty)}</b> to <b>${fmtQty(after)}</b> ${u}${S.moveType === "count" ? ` (${signed(after - it.qty)})` : ""}.`;
   }
 
-  function renderLists() {
+  function renderLists(bg) {
     if (!S.uid) return;
     renderSummary();
     if (S.tab === "stock") { renderFilters(); renderGrid(); } else renderActivity();
-    renderOverlay();
+    renderOverlay(bg);
   }
-  function render() {
+  function render(bg) {
     for (const t of ["stock", "activity"]) {
       $("#tab-" + t).setAttribute("aria-selected", String(S.tab === t));
       $("#view-" + t).hidden = S.tab !== t;
@@ -740,7 +748,7 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
     $("#status").textContent = S.netErr ? "Offline · showing last loaded stock" : S.loaded ? `Signed in as ${S.name}` : "Loading…";
     $("#notice").hidden = !(S.netErr && S.loaded);
     $("#notice").textContent = "You're offline. Changes can't be saved until you're back online.";
-    renderLists();
+    renderLists(bg);
   }
 
   // ---------- sign in ----------
@@ -826,7 +834,7 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
     S.open = { kind: "item", id }; S.confirmDelete = false; S.moveType = "out";
     S.itemMoves = []; S.itemMovesFor = null; S.fresh = ["mvQty", "mvVenue", "mvReason", "mvRef", "mvNote"];
     render();
-    loadItemMoves(id).then(renderOverlay).catch(() => {});
+    loadItemMoves(id).then(() => renderOverlay(true)).catch(() => {});
   }
   function openForm(id) {
     S.pending.forEach((p) => URL.revokeObjectURL(p.url));
@@ -886,7 +894,7 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
       toast(type === "count" ? `Count saved: ${fmtQty(m.balance)} ${it.unit}` : `${type === "in" ? "Booked in" : "Booked out"} ${fmtQty(n)}${type === "out" ? " to " + venue : ""} · now ${fmtQty(m.balance)} on hand`);
       S.fresh = ["mvQty", "mvRef", "mvNote"];
       S.busy = false;
-      await refresh();
+      await refresh(); renderOverlay();
     } catch (e) { S.busy = false; fail(e); renderOverlay(); }
   }
 
@@ -902,7 +910,7 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
         toast(paths.length > 1 ? `${paths.length} photos added` : "Photo added");
       }
     } catch (e) { fail(e); }
-    S.busy = false; await refresh();
+    S.busy = false; await refresh(); renderOverlay();
   }
 
   async function removePhoto(path) {
@@ -1012,13 +1020,21 @@ code { font-size: .9em; background: var(--sunken); padding: 1px 5px; border-radi
     if (!$("#lightbox").hidden) { $("#lightbox").hidden = true; return; }
     if (S.open) closeOverlay();
   });
+  document.addEventListener("focusout", () => setTimeout(() => {
+    const ae = document.activeElement;
+    if (S.overlayStale && !(ae && $("#overlay").contains(ae) && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))) renderOverlay(true);
+  }, 400));
   document.addEventListener("dragover", (e) => { if (S.open) e.preventDefault(); });
   document.addEventListener("drop", (e) => {
     if (!S.open || !e.dataTransfer?.files?.length) return;
     e.preventDefault(); camTarget = S.open.kind === "form" ? "form" : "item"; handleFiles(e.dataTransfer.files);
   });
   document.addEventListener("error", (e) => { if (e.target && e.target.tagName === "IMG") e.target.style.visibility = "hidden"; }, true);
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+  let hiddenAt = 0;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") hiddenAt = Date.now();
+    else if (Date.now() - hiddenAt > 30000) refresh();
+  });
   window.addEventListener("online", refresh);
 
   function route() {
