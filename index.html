@@ -1,0 +1,903 @@
+<title>SRG Warehouse Stock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky signage header with hazard-tape edge, summary strip, then a photo grid of stock;
+   tapping an item opens a side sheet with its photos, bin location, book in/out and history. */
+:root {
+  --bg: #eceef0;        /* swept concrete */
+  --surface: #ffffff;
+  --sunken: #e1e5e9;
+  --ink: #1c2430;       /* slate */
+  --muted: #5b6573;
+  --line: #d3d8de;
+  --hivis: #f2b705;     /* floor-marking yellow */
+  --hivis-ink: #1c2430;
+  --accent-text: #7a5a00;
+  --in: #1f7a4d;
+  --out: #b42318;
+  --warn: #b5560a;
+  --warn-bg: #fdf0e3;
+  --out-bg: #fdecea;
+  --in-bg: #e6f4ec;
+  --scrim: rgba(18, 22, 27, .45);
+  --shadow: 0 1px 2px rgba(28, 36, 48, .08), 0 8px 24px rgba(28, 36, 48, .08);
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Barlow", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161b; --surface: #1b2129; --sunken: #232a33; --ink: #e7ebef; --muted: #98a3b0; --line: #2e3742;
+    --hivis: #f2b705; --hivis-ink: #12161b; --accent-text: #f2c53d;
+    --in: #4cc38a; --out: #f0675a; --warn: #f0913a; --warn-bg: #3a2614; --out-bg: #3b1a17; --in-bg: #15301f;
+    --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161b; --surface: #1b2129; --sunken: #232a33; --ink: #e7ebef; --muted: #98a3b0; --line: #2e3742;
+  --hivis: #f2b705; --hivis-ink: #12161b; --accent-text: #f2c53d;
+  --in: #4cc38a; --out: #f0675a; --warn: #f0913a; --warn-bg: #3a2614; --out-bg: #3b1a17; --in-bg: #15301f;
+  --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--hivis); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-size: .86em; letter-spacing: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1240px; margin: 0 auto; }
+
+/* Header */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); }
+header.top::after { content: ""; display: block; height: 6px;
+  background: repeating-linear-gradient(-45deg, var(--hivis) 0 10px, var(--ink) 10px 20px); }
+.top-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-block: 12px; }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; min-width: 0; }
+.brand h1 { font: 700 26px/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; margin: 0; }
+.brand small { color: var(--muted); font-size: 13px; }
+.search { flex: 1 1 260px; max-width: 440px; position: relative; }
+.search input { width: 100%; padding: 10px 12px 10px 36px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); }
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 2; }
+.tabs { display: flex; gap: 4px; }
+.tab { border: 0; background: none; padding: 10px 14px 12px; font: 600 15px/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 600; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--hivis); color: var(--hivis-ink); border-color: var(--hivis); font-family: var(--f-display); text-transform: uppercase; letter-spacing: .05em; font-size: 16px; }
+.btn.primary:hover { filter: brightness(1.05); }
+.btn.danger { color: var(--out); }
+.btn.ghost { border-color: transparent; background: none; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+/* Summary */
+main { padding-block: 20px 48px; display: grid; gap: 18px; }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.stat { background: var(--surface); padding: 12px 14px; border: 0; text-align: left; display: grid; gap: 2px; }
+button.stat { cursor: pointer; }
+button.stat:hover { background: var(--sunken); }
+.stat b { font: 700 28px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.stat.alert b { color: var(--warn); }
+.stat.crit b { color: var(--out); }
+@media (max-width: 640px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Filters */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 14px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.filters select { padding: 6px 10px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); }
+.filters .spacer { flex: 1; }
+.count { color: var(--muted); font-size: 14px; }
+
+/* Grid */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+@media (max-width: 480px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; cursor: pointer; text-align: left; padding: 0; display: flex; flex-direction: column; min-width: 0; }
+.card:hover { box-shadow: var(--shadow); }
+.thumb { aspect-ratio: 4 / 3; width: 100%; max-width: 100%; background: var(--sunken); display: grid; place-items: center; overflow: hidden; position: relative; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .ph { width: 40%; height: 40%; fill: none; stroke: var(--muted); stroke-width: 1.4; opacity: .6; }
+.thumb .count-badge { position: absolute; right: 6px; bottom: 6px; background: var(--scrim); color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 4px; }
+.card-body { padding: 10px 12px 12px; display: grid; gap: 6px; min-width: 0; }
+.card-name { font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--muted); font-size: 13px; min-width: 0; }
+.card-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.qty { font: 700 24px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.qty small { font: 500 13px var(--f-body); color: var(--muted); margin-left: 3px; }
+.bin { display: inline-block; font-family: var(--f-mono); font-size: 12px; background: var(--hivis); color: var(--hivis-ink); padding: 1px 6px; border-radius: 3px; letter-spacing: .02em; }
+.pill { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.low { background: var(--warn-bg); color: var(--warn); }
+.pill.none { background: var(--out-bg); color: var(--out); }
+.pill.ok { background: var(--in-bg); color: var(--in); }
+
+/* Empty / notices */
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); padding: 36px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; }
+.empty h2 { font: 700 24px/1.1 var(--f-display); text-transform: uppercase; margin: 0; text-wrap: balance; }
+.empty p { color: var(--muted); margin: 0; max-width: 52ch; }
+.notice { background: var(--warn-bg); color: var(--warn); padding: 10px 14px; border-radius: var(--r); font-size: 14px; }
+
+/* Activity */
+.log { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.log-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) auto; gap: 4px 14px; padding: 10px 14px; border-top: 1px solid var(--line); align-items: start; }
+.log-row:first-child { border-top: 0; }
+.log-when { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.log-what { min-width: 0; }
+.log-what .t { font-weight: 600; overflow-wrap: anywhere; }
+.log-what .d { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.log-delta { text-align: right; font: 700 20px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.log-delta small { display: block; font: 400 12px var(--f-body); color: var(--muted); }
+.d-in { color: var(--in); } .d-out { color: var(--out); } .d-count { color: var(--accent-text); }
+.day { padding: 8px 14px; background: var(--sunken); font: 600 13px var(--f-display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+button.linkish { border: 0; background: none; padding: 0; cursor: pointer; text-align: left; font-weight: 600; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+@media (max-width: 520px) { .log-row { grid-template-columns: minmax(0, 1fr) auto; } .log-when { grid-column: 1 / -1; } }
+
+/* Sheet */
+.overlay { position: fixed; inset: 0; z-index: 40; background: var(--scrim); display: flex; justify-content: flex-end; }
+.sheet { background: var(--bg); width: min(600px, 100%); height: 100%; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); box-shadow: var(--shadow); }
+.sheet-head { position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; padding-block: 12px; }
+.sheet-head h2 { font: 700 22px/1.15 var(--f-display); text-transform: uppercase; margin: 0; flex: 1; min-width: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.sheet-body { padding-block: 16px 32px; display: grid; gap: 18px; }
+.section { display: grid; gap: 10px; }
+.section > h3 { margin: 0; font: 600 13px var(--f-display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.photos { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
+.photo { flex: 0 0 auto; width: 150px; aspect-ratio: 1; max-width: 100%; border-radius: var(--r); overflow: hidden; background: var(--sunken); position: relative; scroll-snap-align: start; border: 0; padding: 0; cursor: zoom-in; }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo .x { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: var(--scrim); color: #fff; cursor: pointer; display: grid; place-items: center; font-size: 16px; line-height: 1; }
+.add-photo { flex: 0 0 auto; width: 150px; aspect-ratio: 1; max-width: 100%; border: 2px dashed var(--line); border-radius: var(--r); display: grid; place-items: center; align-content: center; gap: 6px; color: var(--muted); cursor: pointer; background: var(--surface); font-size: 14px; text-align: center; padding: 8px; }
+.add-photo svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.fact { background: var(--surface); padding: 10px 12px; min-width: 0; }
+.fact > span { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.fact b { font-weight: 600; overflow-wrap: anywhere; }
+.fact.big b { font: 700 34px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.notes { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.move { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 12px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 10px 6px; cursor: pointer; font: 600 15px var(--f-display); text-transform: uppercase; letter-spacing: .04em; border-left: 1px solid var(--line); }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"][data-t="in"] { background: var(--in-bg); color: var(--in); }
+.seg button[aria-pressed="true"][data-t="out"] { background: var(--out-bg); color: var(--out); }
+.seg button[aria-pressed="true"][data-t="count"] { background: var(--hivis); color: var(--hivis-ink); }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 420px) { .row2 { grid-template-columns: 1fr; } }
+label.f { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); min-width: 0; }
+label.f input, label.f select, label.f textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); font-weight: 400; font-size: 16px; }
+label.f textarea { min-height: 70px; resize: vertical; }
+.stepper { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; }
+.stepper button { border: 1px solid var(--line); background: var(--sunken); font-size: 22px; cursor: pointer; }
+.stepper button:first-child { border-radius: var(--r) 0 0 var(--r); }
+.stepper button:last-child { border-radius: 0 var(--r) var(--r) 0; }
+.stepper input { border-radius: 0 !important; text-align: center; font: 700 22px var(--f-display) !important; border-left: 0 !important; border-right: 0 !important; }
+.preview { font-size: 14px; color: var(--muted); }
+.preview b { color: var(--ink); }
+.hist { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.foot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.confirm { background: var(--out-bg); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; color: var(--ink); }
+.req { color: var(--out); }
+.pending-photos { display: flex; gap: 8px; flex-wrap: wrap; }
+.pending-photos .photo { width: 96px; cursor: default; }
+
+/* Lightbox + toast */
+.lightbox { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.88); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); cursor: zoom-out; }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 70; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: var(--r); box-shadow: var(--shadow); max-width: calc(100% - 32px); font-size: 14px; }
+.toast.err { background: var(--out); color: #fff; }
+.status { font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) {
+  .sheet { animation: slide .18s ease-out; }
+  @keyframes slide { from { transform: translateX(24px); opacity: .6; } }
+}
+</style>
+
+<header class="top">
+  <div class="wrap gutter">
+    <div class="top-row">
+      <div class="brand"><h1>SRG Warehouse</h1><small id="status" class="status">Connecting…</small></div>
+      <label class="search" for="q">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search name, SKU, bin, supplier" autocomplete="off" aria-label="Search stock">
+      </label>
+      <button class="btn primary" id="addBtn" type="button">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Add item
+      </button>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-stock" data-tab="stock" aria-selected="true">Stock</button>
+      <button class="tab" role="tab" id="tab-activity" data-tab="activity" aria-selected="false">Ins &amp; outs</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap gutter">
+  <div class="summary" id="summary"></div>
+  <div id="notice" class="notice" hidden></div>
+  <section id="view-stock" class="section" style="gap:14px">
+    <div class="filters" id="filters"></div>
+    <div id="grid"></div>
+  </section>
+  <section id="view-activity" class="section" style="gap:14px" hidden>
+    <div class="filters" id="actFilters"></div>
+    <div id="log"></div>
+  </section>
+</main>
+
+<div id="overlay" class="overlay" hidden></div>
+<div id="lightbox" class="lightbox" hidden><img id="lbImg" alt=""></div>
+<div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
+<input type="file" id="camInput" accept="image/*" capture="environment" hidden>
+<input type="file" id="fileInput" accept="image/*" multiple hidden>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const TAB = "tab-" + Math.random().toString(36).slice(2);
+  const ICON_BOX = '<svg class="ph" viewBox="0 0 24 24"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>';
+  const ICON_CAM = '<svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+  const ICON_IMG = '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 9"/></svg>';
+
+  const REASONS = {
+    in: ["Supplier delivery", "Returned from venue", "Transfer in", "Found / recount", "Other"],
+    out: ["Sent to venue", "Used on site", "Damaged / written off", "Transfer out", "Returned to supplier", "Other"],
+    count: ["Stocktake"],
+  };
+  const UNITS = ["each", "box", "carton", "case", "pack", "pallet", "roll", "kg", "L"];
+
+  const S = {
+    items: new Map(), moves: [], itemMoves: [], itemMovesFor: null,
+    q: "", cat: "", loc: "", only: "", sort: "name", tab: "stock", act: "all",
+    open: null, // {kind:'item', id} | {kind:'form', id|null}
+    moveType: "out", confirmDelete: false,
+    canWrite: true, uid: null, loaded: false, stale: false, offline: false,
+    busy: false, pending: [], // pending photos for form: {blob, url}
+    names: {},
+  };
+  let db = null, assets = null, user = null, downloads = null, unsubItemMoves = null;
+
+  // ---------- helpers ----------
+  const itemsArr = () => [...S.items.values()];
+  const stockState = (it) => {
+    const q = Number(it.qty) || 0, min = Number(it.minQty) || 0;
+    if (q <= 0) return "none";
+    if (min > 0 && q <= min) return "low";
+    return "ok";
+  };
+  const pill = (it) => {
+    const s = stockState(it);
+    if (s === "none") return '<span class="pill none">Out of stock</span>';
+    if (s === "low") return '<span class="pill low">Low</span>';
+    return "";
+  };
+  const fmtQty = (n) => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString("en-AU");
+  const signed = (n) => (n > 0 ? "+" : n < 0 ? "−" : "±") + fmtQty(Math.abs(n));
+  const dayKey = (iso) => new Date(iso).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const timeOf = (iso) => new Date(iso).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
+  const isToday = (iso) => new Date(iso).toDateString() === new Date().toDateString();
+  const who = (id) => (id && S.names[id]) || (id && id === S.uid ? "You" : "Someone");
+  const blobUrl = (id) => "/_blob/" + encodeURIComponent(id);
+
+  async function resolveNames(ids) {
+    if (!user || !ids.length) return;
+    const uniq = [...new Set(ids.filter(Boolean))];
+    try {
+      const ps = await user.profiles(uniq);
+      let changed = false;
+      for (const id of uniq) {
+        const n = ps[id]?.isMe ? "You" : (ps[id]?.name || "");
+        if (n && S.names[id] !== n) { S.names[id] = n; changed = true; }
+      }
+      if (changed) renderLists();
+    } catch (_) {}
+  }
+
+  let toastT;
+  function toast(msg, err) {
+    const t = $("#toast");
+    t.textContent = msg; t.className = "toast" + (err ? " err" : ""); t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), err ? 6000 : 2800);
+  }
+  function errMsg(e) {
+    const c = e && e.code;
+    if (c === "busy") return e.message;
+    if (c === "quota_exceeded") return "The stock database is full. Delete old items you no longer stock, then try again.";
+    if (c === "invalid_argument") return "You don't have permission to change stock here. Ask the owner to make you a Contributor.";
+    if (c === "too_large") return "That photo is too large (20 MB max).";
+    if (c === "unsupported_type") return "That file type isn't supported. Use a JPG, PNG or WebP photo.";
+    if (c === "quota_or_state") return "Photo storage is full. Remove some old photos and try again.";
+    if (c === "rate_limited" || c === "resource_exhausted") return "Too many changes at once. Wait a few seconds and try again.";
+    if (c === "revoked" || c === "not_granted") return "Your access to this page changed. Reload to continue.";
+    if (c === "not_uploader") return "Only the person who took this photo (or an editor) can delete the file.";
+    return "Couldn't save. Check your connection and try again.";
+  }
+  function onWriteError(e) {
+    if (e && e.code === "invalid_argument") S.canWrite = false;
+    toast(errMsg(e), true);
+    render();
+  }
+
+  // ---------- image shrink ----------
+  async function shrink(file) {
+    try {
+      const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+      const max = 1600, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      const out = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.82));
+      return out || file;
+    } catch (_) { return file; }
+  }
+  async function uploadPhoto(file) {
+    const blob = await shrink(file);
+    const type = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(blob.type) ? blob.type : "image/jpeg";
+    let r;
+    try { r = await assets.upload(blob, { type }); }
+    catch (e) { if (e && e.code === "store_unavailable") { await sleep(800); r = await assets.upload(blob, { type }); } else throw e; }
+    return r.id;
+  }
+
+  // ---------- stock movement with a short lease so two people can't clobber a count ----------
+  async function withLease(ref, fn) {
+    for (let i = 0; i < 10; i++) {
+      let r;
+      try { r = await ref.acquire({ holder: TAB, ttlMs: 4000 }); }
+      catch (e) { if (e && (e.code === "capability_removed" || e.code === "capability_disabled")) return fn(); throw e; }
+      if (r.acquired) return fn();
+      await sleep(500 + Math.random() * 500);
+    }
+    throw { code: "busy", message: "Someone else is updating this item right now. Try again in a few seconds." };
+  }
+  async function recordMove(itemId, type, qty, reason, ref, note) {
+    const iref = db.doc("items/" + itemId);
+    return withLease(iref, async () => {
+      const snap = await iref.get();
+      if (!snap.exists) throw { code: "busy", message: "This item was deleted." };
+      const it = snap.data();
+      const cur = Number(it.qty) || 0;
+      const delta = type === "in" ? qty : type === "out" ? -qty : qty - cur;
+      const bal = cur + delta;
+      if (type === "out" && bal < 0) throw { code: "busy", message: `Only ${fmtQty(cur)} ${it.unit || ""} on hand. Do a stocktake count if the system is wrong.` };
+      const now = new Date().toISOString();
+      await iref.update({ qty: bal, updatedAt: now, updatedBy: S.uid });
+      await db.collection("moves").doc().set({
+        itemId, itemName: it.name || "", sku: it.sku || "", unit: it.unit || "", location: it.location || "",
+        type, delta, qty, balance: bal, reason: reason || "", ref: ref || "", note: note || "", by: S.uid, at: now,
+      });
+      return { delta, bal };
+    });
+  }
+
+  // ---------- render ----------
+  function filtered() {
+    const q = S.q.trim().toLowerCase();
+    let list = itemsArr().filter((it) => {
+      if (S.cat && (it.category || "") !== S.cat) return false;
+      if (S.loc && (it.location || "") !== S.loc) return false;
+      if (S.only === "low" && stockState(it) === "ok") return false;
+      if (S.only === "none" && stockState(it) !== "none") return false;
+      if (q) {
+        const hay = [it.name, it.sku, it.location, it.category, it.supplier, it.notes].join(" ").toLowerCase();
+        if (!q.split(/\s+/).every((w) => hay.includes(w))) return false;
+      }
+      return true;
+    });
+    const by = {
+      name: (a, b) => (a.name || "").localeCompare(b.name || ""),
+      bin: (a, b) => (a.location || "~").localeCompare(b.location || "~", undefined, { numeric: true }) || (a.name || "").localeCompare(b.name || ""),
+      qty: (a, b) => (Number(a.qty) || 0) - (Number(b.qty) || 0),
+      recent: (a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""),
+    }[S.sort];
+    return list.sort(by);
+  }
+
+  function renderSummary() {
+    const arr = itemsArr();
+    const low = arr.filter((i) => stockState(i) === "low").length;
+    const none = arr.filter((i) => stockState(i) === "none").length;
+    const today = S.moves.filter((m) => isToday(m.at)).length;
+    $("#summary").innerHTML = `
+      <div class="stat"><b>${S.loaded ? arr.length : "–"}</b><span>Stock lines</span></div>
+      <button class="stat ${low ? "alert" : ""}" type="button" data-only="low"><b>${S.loaded ? low : "–"}</b><span>Low stock</span></button>
+      <button class="stat ${none ? "crit" : ""}" type="button" data-only="none"><b>${S.loaded ? none : "–"}</b><span>Out of stock</span></button>
+      <button class="stat" type="button" data-goto="activity"><b>${S.loaded ? today : "–"}</b><span>Moves today</span></button>`;
+  }
+
+  function renderFilters() {
+    const arr = itemsArr();
+    const cats = [...new Set(arr.map((i) => i.category).filter(Boolean))].sort();
+    const locs = [...new Set(arr.map((i) => i.location).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (S.cat && !cats.includes(S.cat)) S.cat = "";
+    if (S.loc && !locs.includes(S.loc)) S.loc = "";
+    const n = filtered().length;
+    $("#filters").innerHTML = `
+      <button class="chip" type="button" data-cat="" aria-pressed="${!S.cat}">All</button>
+      ${cats.map((c) => `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${S.cat === c}">${esc(c)}</button>`).join("")}
+      ${S.only ? `<button class="chip" type="button" data-only="" aria-pressed="true">${S.only === "low" ? "Low stock" : "Out of stock"} ✕</button>` : ""}
+      <span class="spacer"></span>
+      ${locs.length ? `<select id="locSel" aria-label="Filter by bin location"><option value="">All locations</option>${locs.map((l) => `<option value="${esc(l)}" ${S.loc === l ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>` : ""}
+      <select id="sortSel" aria-label="Sort">
+        <option value="name" ${S.sort === "name" ? "selected" : ""}>Name A–Z</option>
+        <option value="bin" ${S.sort === "bin" ? "selected" : ""}>Bin location</option>
+        <option value="qty" ${S.sort === "qty" ? "selected" : ""}>Lowest qty first</option>
+        <option value="recent" ${S.sort === "recent" ? "selected" : ""}>Recently changed</option>
+      </select>
+      ${downloads && arr.length ? `<button class="btn ghost" type="button" id="exportStock">Export CSV</button>` : ""}
+      <span class="count num">${n} of ${arr.length}</span>`;
+  }
+
+  function renderGrid() {
+    const el = $("#grid");
+    if (!S.loaded) {
+      el.innerHTML = `<div class="empty"><h2>${S.offline ? "Stock list unavailable" : "Loading stock…"}</h2><p>${S.offline ? "This page needs to be opened in Claude, signed in, to load the shared stock list." : S.stale ? "The stock list is taking a while to load. Check your connection." : "Fetching the shared stock list."}</p></div>`;
+      return;
+    }
+    if (!S.items.size) {
+      el.innerHTML = `<div class="empty">${ICON_BOX.replace('class="ph"', 'class="ph" style="width:64px;height:64px"')}
+        <h2>No stock yet</h2>
+        <p>Add your first item: snap a photo, give it a name and the bin it lives in (for example <span class="bin">A-03-2</span> for aisle A, bay 3, shelf 2), and enter how many are on hand.</p>
+        ${S.canWrite ? `<button class="btn primary" type="button" data-add>Add first item</button>` : ""}</div>`;
+      return;
+    }
+    const list = filtered();
+    if (!list.length) { el.innerHTML = `<div class="empty"><h2>No matches</h2><p>Nothing matches those filters. Clear the search or pick “All”.</p></div>`; return; }
+    el.innerHTML = `<div class="grid">${list.map((it) => {
+      const ph = (it.photos || [])[0];
+      return `<button class="card" type="button" data-item="${esc(it.id)}">
+        <div class="thumb">${ph ? `<img src="${blobUrl(ph)}" alt="" loading="lazy">` : ICON_BOX}
+          ${(it.photos || []).length > 1 ? `<span class="count-badge">${it.photos.length} photos</span>` : ""}</div>
+        <div class="card-body">
+          <div class="card-name">${esc(it.name)}</div>
+          <div class="card-meta">${it.location ? `<span class="bin">${esc(it.location)}</span>` : ""}${it.sku ? `<span class="mono">${esc(it.sku)}</span>` : ""}</div>
+          <div class="card-foot"><span class="qty">${fmtQty(it.qty)}<small>${esc(it.unit || "each")}</small></span>${pill(it)}</div>
+        </div></button>`;
+    }).join("")}</div>`;
+  }
+
+  function moveRows(moves, showItem) {
+    if (!moves.length) return "";
+    let out = "", lastDay = "";
+    for (const m of moves) {
+      const d = dayKey(m.at);
+      if (d !== lastDay) { out += `<div class="day">${isToday(m.at) ? "Today" : esc(d)}</div>`; lastDay = d; }
+      const cls = m.type === "in" ? "d-in" : m.type === "out" ? "d-out" : "d-count";
+      const label = m.type === "in" ? "Booked in" : m.type === "out" ? "Booked out" : "Stocktake";
+      const exists = S.items.has(m.itemId);
+      const title = showItem
+        ? (exists ? `<button class="linkish" type="button" data-item="${esc(m.itemId)}">${esc(m.itemName)}</button>` : esc(m.itemName) + ' <span class="status">(deleted)</span>')
+        : label;
+      const detail = [showItem ? label : "", m.reason, m.ref ? "Ref " + m.ref : "", m.note].filter(Boolean).map(esc).join(" · ");
+      out += `<div class="log-row">
+        <div class="log-when">${timeOf(m.at)}</div>
+        <div class="log-what"><div class="t">${title}</div><div class="d">${detail} · ${esc(who(m.by))}</div></div>
+        <div class="log-delta ${cls}">${m.type === "count" ? "= " + fmtQty(m.balance) : signed(m.delta)}<small>${m.type === "count" ? "was " + fmtQty(m.balance - m.delta) : "bal " + fmtQty(m.balance)} ${esc(m.unit || "")}</small></div>
+      </div>`;
+    }
+    return out;
+  }
+
+  function renderActivity() {
+    const opts = [["all", "All"], ["in", "Booked in"], ["out", "Booked out"], ["count", "Stocktakes"]];
+    $("#actFilters").innerHTML = opts.map(([k, l]) => `<button class="chip" type="button" data-act="${k}" aria-pressed="${S.act === k}">${l}</button>`).join("")
+      + `<span class="spacer"></span>${downloads && S.moves.length ? `<button class="btn ghost" type="button" id="exportMoves">Export CSV</button>` : ""}
+      <span class="count">Latest ${S.moves.length} moves</span>`;
+    const list = S.moves.filter((m) => S.act === "all" || m.type === S.act);
+    $("#log").innerHTML = !S.loaded
+      ? `<div class="empty"><h2>Loading…</h2></div>`
+      : list.length ? `<div class="log">${moveRows(list, true)}</div>`
+      : `<div class="empty"><h2>No movements yet</h2><p>Every time stock is booked in, booked out or counted, it’s logged here with who did it, when, and the venue or docket reference.</p></div>`;
+    resolveNames(list.map((m) => m.by));
+  }
+
+  function renderItemSheet(it) {
+    const photos = it.photos || [];
+    const reasons = REASONS[S.moveType];
+    const hist = S.itemMovesFor === it.id ? S.itemMoves : [];
+    return `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div class="sheet-head gutter"><h2 id="sheetTitle">${esc(it.name)}</h2>
+        <button class="btn ghost" type="button" data-close aria-label="Close">✕</button></div>
+      <div class="sheet-body gutter">
+        <div class="section"><h3>Photos</h3>
+          <div class="photos">
+            ${photos.map((p) => `<div class="photo"><button type="button" data-zoom="${esc(p)}" style="all:unset;display:block;width:100%;height:100%;cursor:zoom-in"><img src="${blobUrl(p)}" alt="Photo of ${esc(it.name)}" loading="lazy"></button>
+              ${S.canWrite ? `<button class="x" type="button" data-rmphoto="${esc(p)}" aria-label="Remove photo">×</button>` : ""}</div>`).join("")}
+            ${assets && S.canWrite ? `<button class="add-photo" type="button" data-cam="item">${ICON_CAM}Take photo</button>
+              <button class="add-photo" type="button" data-pick="item">${ICON_IMG}Choose from library</button>` : ""}
+            ${!photos.length && !(assets && S.canWrite) ? `<p class="status">No photos yet.</p>` : ""}
+          </div>
+          ${S.busy ? `<p class="status">Uploading…</p>` : ""}
+        </div>
+
+        <div class="facts">
+          <div class="fact big"><span>On hand</span><b>${fmtQty(it.qty)}</b> <span style="display:inline">${esc(it.unit || "each")}</span> ${pill(it)}</div>
+          <div class="fact"><span>Bin location</span><b>${it.location ? `<span class="bin" style="font-size:15px">${esc(it.location)}</span>` : "Not set"}</b>
+            <span style="margin-top:8px">Reorder at</span><b class="num">${Number(it.minQty) ? fmtQty(it.minQty) + " " + esc(it.unit || "") : "Not set"}</b></div>
+          <div class="fact"><span>SKU / code</span><b class="mono">${esc(it.sku) || "—"}</b></div>
+          <div class="fact"><span>Category</span><b>${esc(it.category) || "—"}</b></div>
+          ${it.supplier ? `<div class="fact" style="grid-column:1/-1"><span>Supplier</span><b>${esc(it.supplier)}</b></div>` : ""}
+        </div>
+        ${it.notes ? `<div class="notes">${esc(it.notes)}</div>` : ""}
+
+        ${S.canWrite ? `<form class="move" id="moveForm" autocomplete="off">
+          <div class="seg" role="group" aria-label="Movement type">
+            <button type="button" data-t="in" aria-pressed="${S.moveType === "in"}">Book in</button>
+            <button type="button" data-t="out" aria-pressed="${S.moveType === "out"}">Book out</button>
+            <button type="button" data-t="count" aria-pressed="${S.moveType === "count"}">Count</button>
+          </div>
+          <label class="f" for="mvQty">${S.moveType === "count" ? "Counted on the shelf" : "Quantity"} (${esc(it.unit || "each")})
+            <div class="stepper"><button type="button" data-step="-1" aria-label="Less">−</button>
+            <input id="mvQty" type="number" inputmode="decimal" min="0" step="any" value="${S.moveType === "count" ? fmtQty(it.qty).replace(/,/g, "") : 1}" required>
+            <button type="button" data-step="1" aria-label="More">+</button></div></label>
+          <div class="row2">
+            <label class="f" for="mvReason">Reason<select id="mvReason">${reasons.map((r) => `<option>${esc(r)}</option>`).join("")}</select></label>
+            <label class="f" for="mvRef">${S.moveType === "out" ? "Venue / docket" : S.moveType === "in" ? "PO / invoice no." : "Reference"}
+              <input id="mvRef" type="text" placeholder="${S.moveType === "out" ? "e.g. venue name" : "optional"}"></label>
+          </div>
+          <label class="f" for="mvNote">Note<input id="mvNote" type="text" placeholder="optional"></label>
+          <div class="preview" id="mvPreview"></div>
+          <button class="btn primary" type="submit" ${S.busy ? "disabled" : ""}>${S.moveType === "in" ? "Book in" : S.moveType === "out" ? "Book out" : "Save count"}</button>
+        </form>` : `<p class="notice">You can view stock but not change it. Ask the page owner for Contributor access.</p>`}
+
+        <div class="section"><h3>History</h3>
+          ${hist.length ? `<div class="hist">${moveRows(hist, false)}</div>` : `<p class="status">${S.itemMovesFor === it.id ? "No movements recorded yet." : "Loading history…"}</p>`}
+        </div>
+
+        ${S.canWrite ? `<div class="section"><h3>Item</h3>
+          ${S.confirmDelete ? `<div class="confirm"><b>Delete “${esc(it.name)}”?</b><span>It disappears from the stock list. Its past movements stay in Ins &amp; outs.</span>
+            <div class="foot-actions"><button class="btn danger" type="button" data-delete-yes>Delete item</button><button class="btn" type="button" data-delete-no>Keep it</button></div></div>`
+          : `<div class="foot-actions"><button class="btn" type="button" data-edit="${esc(it.id)}">Edit details</button><button class="btn danger" type="button" data-delete>Delete…</button></div>`}
+        </div>` : ""}
+      </div></div>`;
+  }
+
+  function renderForm(it) {
+    const editing = !!it;
+    const v = it || { unit: "each" };
+    const arr = itemsArr();
+    const cats = [...new Set(arr.map((i) => i.category).filter(Boolean))].sort();
+    const locs = [...new Set(arr.map((i) => i.location).filter(Boolean))].sort();
+    const sups = [...new Set(arr.map((i) => i.supplier).filter(Boolean))].sort();
+    return `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+      <div class="sheet-head gutter"><h2 id="formTitle">${editing ? "Edit item" : "Add stock item"}</h2>
+        <button class="btn ghost" type="button" data-close aria-label="Close">✕</button></div>
+      <form class="sheet-body gutter" id="itemForm" autocomplete="off">
+        ${!editing ? `<div class="section"><h3>Photos</h3>
+          <div class="photos">
+            ${S.pending.map((p, i) => `<div class="photo" style="width:120px"><img src="${p.url}" alt=""><button class="x" type="button" data-rmpending="${i}" aria-label="Remove photo">×</button></div>`).join("")}
+            ${assets ? `<button class="add-photo" type="button" data-cam="form" style="width:120px">${ICON_CAM}Take photo</button>
+            <button class="add-photo" type="button" data-pick="form" style="width:120px">${ICON_IMG}Choose</button>` : `<p class="status">Photo uploads aren’t available with your access level.</p>`}
+          </div></div>` : ""}
+        <label class="f" for="fName">Item name <span class="req">*</span><input id="fName" required maxlength="140" value="${esc(v.name)}" placeholder="e.g. Riedel Pinot glass 700ml"></label>
+        <div class="row2">
+          <label class="f" for="fSku">SKU / code<input id="fSku" class="mono" maxlength="60" value="${esc(v.sku)}" placeholder="optional"></label>
+          <label class="f" for="fCat">Category<input id="fCat" list="dlCat" maxlength="60" value="${esc(v.category)}" placeholder="e.g. Glassware"></label>
+        </div>
+        <div class="row2">
+          <label class="f" for="fLoc">Bin location<input id="fLoc" list="dlLoc" class="mono" maxlength="40" value="${esc(v.location)}" placeholder="e.g. A-03-2"></label>
+          <label class="f" for="fUnit">Unit<input id="fUnit" list="dlUnit" maxlength="20" value="${esc(v.unit || "each")}"></label>
+        </div>
+        <div class="row2">
+          ${!editing ? `<label class="f" for="fQty">Quantity on hand now<input id="fQty" type="number" inputmode="decimal" min="0" step="any" value="0"></label>` : ""}
+          <label class="f" for="fMin">Reorder at (low-stock level)<input id="fMin" type="number" inputmode="decimal" min="0" step="any" value="${esc(v.minQty ?? "")}" placeholder="optional"></label>
+        </div>
+        <label class="f" for="fSup">Supplier<input id="fSup" list="dlSup" maxlength="100" value="${esc(v.supplier)}" placeholder="optional"></label>
+        <label class="f" for="fNotes">Notes<textarea id="fNotes" maxlength="2000" placeholder="Pack size, condition, which venues use it…">${esc(v.notes)}</textarea></label>
+        <datalist id="dlCat">${cats.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
+        <datalist id="dlLoc">${locs.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
+        <datalist id="dlUnit">${UNITS.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
+        <datalist id="dlSup">${sups.map((c) => `<option value="${esc(c)}">`).join("")}</datalist>
+        <div class="foot-actions">
+          <button class="btn primary" type="submit" ${S.busy ? "disabled" : ""}>${S.busy ? "Saving…" : editing ? "Save changes" : "Add to stock"}</button>
+          <button class="btn" type="button" data-close>Cancel</button>
+        </div>
+      </form></div>`;
+  }
+
+  function renderOverlay() {
+    const ov = $("#overlay");
+    if (!S.open) { ov.hidden = true; ov.innerHTML = ""; return; }
+    let html = "";
+    if (S.open.kind === "item") {
+      const it = S.items.get(S.open.id);
+      if (!it) { closeOverlay(); return; }
+      html = renderItemSheet(it);
+    } else {
+      html = renderForm(S.open.id ? S.items.get(S.open.id) : null);
+    }
+    // keep form values across re-renders
+    const keep = {};
+    ov.querySelectorAll("input[id],select[id],textarea[id]").forEach((el) => { if (el.type !== "file") keep[el.id] = el.value; });
+    const scroll = ov.querySelector(".sheet")?.scrollTop || 0;
+    const focusId = document.activeElement && ov.contains(document.activeElement) ? document.activeElement.id : null;
+    ov.innerHTML = html; ov.hidden = false;
+    for (const [id, val] of Object.entries(keep)) { const el = document.getElementById(id); if (el && !(S.fresh || []).includes(id)) el.value = val; }
+    S.fresh = [];
+    const sh = ov.querySelector(".sheet"); if (sh) sh.scrollTop = scroll;
+    if (focusId) document.getElementById(focusId)?.focus();
+    updatePreview();
+    if (S.open.kind === "item") resolveNames(S.itemMoves.map((m) => m.by));
+  }
+
+  function updatePreview() {
+    const p = $("#mvPreview"); if (!p || S.open?.kind !== "item") return;
+    const it = S.items.get(S.open.id); if (!it) return;
+    const n = parseFloat($("#mvQty").value);
+    if (!(n >= 0)) { p.textContent = "Enter a quantity."; return; }
+    const cur = Number(it.qty) || 0, u = esc(it.unit || "");
+    const after = S.moveType === "in" ? cur + n : S.moveType === "out" ? cur - n : n;
+    p.innerHTML = after < 0 && S.moveType === "out"
+      ? `<span style="color:var(--out)">Only ${fmtQty(cur)} ${u} on hand.</span>`
+      : `On hand goes from <b>${fmtQty(cur)}</b> to <b>${fmtQty(after)}</b> ${u}${S.moveType === "count" ? ` (${signed(after - cur)})` : ""}.`;
+  }
+
+  function renderLists() {
+    renderSummary();
+    if (S.tab === "stock") { renderFilters(); renderGrid(); } else renderActivity();
+    if (S.open) renderOverlay();
+  }
+  function render() {
+    for (const t of ["stock", "activity"]) {
+      $("#tab-" + t).setAttribute("aria-selected", String(S.tab === t));
+      $("#view-" + t).hidden = S.tab !== t;
+    }
+    $("#addBtn").hidden = !S.canWrite || !S.loaded;
+    const st = $("#status");
+    st.textContent = S.offline ? "Offline preview" : !S.loaded ? (S.stale ? "Still connecting…" : "Connecting…") : S.canWrite ? "Live · shared with your team" : "Live · view only";
+    renderLists();
+  }
+
+  // ---------- overlay control ----------
+  function openItem(id) {
+    S.open = { kind: "item", id }; S.confirmDelete = false; S.moveType = "out";
+    subscribeItemMoves(id);
+    render();
+  }
+  function openForm(id) {
+    S.pending.forEach((p) => URL.revokeObjectURL(p.url));
+    S.pending = []; S.open = { kind: "form", id: id || null };
+    $("#overlay").innerHTML = ""; // fresh form values
+    render();
+    setTimeout(() => $("#fName")?.focus(), 30);
+  }
+  function closeOverlay() {
+    if (S.open?.kind === "form" && S.open.id) { openItem(S.open.id); return; }
+    S.open = null; S.pending.forEach((p) => URL.revokeObjectURL(p.url)); S.pending = [];
+    if (unsubItemMoves) { unsubItemMoves(); unsubItemMoves = null; }
+    S.itemMovesFor = null; S.itemMoves = [];
+    $("#overlay").innerHTML = "";
+    render();
+  }
+  function subscribeItemMoves(id) {
+    if (S.itemMovesFor === id && unsubItemMoves) return;
+    if (unsubItemMoves) unsubItemMoves();
+    S.itemMoves = []; S.itemMovesFor = null;
+    if (!db) return;
+    unsubItemMoves = db.collection("moves").where("itemId", "==", id).orderBy("at", "desc").limit(100).onSnapshot(
+      (snap) => { S.itemMoves = snap.docs.map((d) => ({ id: d.id, ...d.data() })); S.itemMovesFor = id; if (S.open?.id === id) renderOverlay(); },
+      () => { S.itemMovesFor = id; }
+    );
+  }
+
+  // ---------- actions ----------
+  async function saveForm() {
+    const val = (id) => ($("#" + id)?.value || "").trim();
+    const name = val("fName");
+    if (!name) { toast("Give the item a name.", true); return; }
+    const minRaw = val("fMin");
+    const data = {
+      name, sku: val("fSku"), category: val("fCat"), location: val("fLoc").toUpperCase(),
+      unit: val("fUnit") || "each", minQty: minRaw === "" ? 0 : Math.max(0, parseFloat(minRaw) || 0),
+      supplier: val("fSup"), notes: val("fNotes"), updatedAt: new Date().toISOString(), updatedBy: S.uid,
+    };
+    S.busy = true; render();
+    try {
+      if (S.open.id) {
+        await db.doc("items/" + S.open.id).update(data);
+        toast("Saved");
+        const id = S.open.id; S.busy = false; openItem(id); return;
+      }
+      const photos = [];
+      for (const p of S.pending) { try { photos.push(await uploadPhoto(p.blob)); } catch (e) { toast(errMsg(e), true); } }
+      const qty = Math.max(0, parseFloat(val("fQty")) || 0);
+      const ref = db.collection("items").doc();
+      const now = data.updatedAt;
+      await ref.set({ ...data, qty, photos, createdAt: now, createdBy: S.uid });
+      if (qty > 0) {
+        await db.collection("moves").doc().set({ itemId: ref.id, itemName: name, sku: data.sku, unit: data.unit, location: data.location,
+          type: "in", delta: qty, qty, balance: qty, reason: "Opening stock", ref: "", note: "", by: S.uid, at: now });
+      }
+      S.busy = false; toast(`Added ${name}`);
+      S.pending.forEach((p) => URL.revokeObjectURL(p.url)); S.pending = [];
+      S.items.set(ref.id, { id: ref.id, ...data, qty, photos });
+      openItem(ref.id);
+    } catch (e) { S.busy = false; onWriteError(e); }
+  }
+
+  async function submitMove() {
+    const it = S.items.get(S.open.id); if (!it) return;
+    const n = parseFloat($("#mvQty").value);
+    if (!(n >= 0) || (S.moveType !== "count" && n === 0)) { toast("Enter a quantity above zero.", true); return; }
+    const reason = $("#mvReason").value, ref = $("#mvRef").value.trim(), note = $("#mvNote").value.trim();
+    S.busy = true; renderOverlay();
+    try {
+      const r = await recordMove(it.id, S.moveType, n, reason, ref, note);
+      toast(S.moveType === "count" ? `Count saved: ${fmtQty(r.bal)} ${it.unit || ""}` : `${S.moveType === "in" ? "Booked in" : "Booked out"} ${fmtQty(n)} · now ${fmtQty(r.bal)} on hand`);
+      ["mvRef", "mvNote"].forEach((id) => { const el = $("#" + id); if (el) el.value = ""; });
+      const q = $("#mvQty"); if (q) q.value = S.moveType === "count" ? r.bal : 1;
+    } catch (e) { onWriteError(e); }
+    S.busy = false; renderOverlay();
+  }
+
+  async function addPhotosToItem(files) {
+    const id = S.open?.id; if (!id || !files.length) return;
+    S.busy = true; renderOverlay();
+    const ids = [];
+    for (const f of files) { try { ids.push(await uploadPhoto(f)); } catch (e) { toast(errMsg(e), true); } }
+    try {
+      if (ids.length) {
+        const cur = (await db.doc("items/" + id).get()).data();
+        await db.doc("items/" + id).update({ photos: [...(cur?.photos || []), ...ids], updatedAt: new Date().toISOString(), updatedBy: S.uid });
+        toast(ids.length > 1 ? `${ids.length} photos added` : "Photo added");
+      }
+    } catch (e) { onWriteError(e); }
+    S.busy = false; renderOverlay();
+  }
+
+  async function removePhoto(assetId) {
+    const id = S.open?.id; if (!id) return;
+    try {
+      const cur = (await db.doc("items/" + id).get()).data();
+      await db.doc("items/" + id).update({ photos: (cur?.photos || []).filter((p) => p !== assetId), updatedAt: new Date().toISOString(), updatedBy: S.uid });
+      toast("Photo removed");
+      if (assets) assets.delete(assetId).catch(() => {});
+    } catch (e) { onWriteError(e); }
+  }
+
+  async function deleteItem() {
+    const id = S.open?.id; const it = S.items.get(id); if (!it) return;
+    try {
+      await db.doc("items/" + id).delete();
+      toast(`Deleted ${it.name}`);
+      S.items.delete(id); closeOverlay();
+    } catch (e) { onWriteError(e); }
+  }
+
+  const csvCell = (v) => { const s = String(v ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  async function exportCsv(kind) {
+    if (!downloads) return;
+    let rows, name;
+    const stamp = new Date().toISOString().slice(0, 10);
+    if (kind === "stock") {
+      rows = [["Name", "SKU", "Category", "Bin location", "On hand", "Unit", "Reorder at", "Status", "Supplier", "Notes", "Last changed"]]
+        .concat(filtered().map((i) => [i.name, i.sku, i.category, i.location, i.qty, i.unit, i.minQty || "", { ok: "OK", low: "Low", none: "Out" }[stockState(i)], i.supplier, i.notes, i.updatedAt]));
+      name = `srg-stock-${stamp}.csv`;
+    } else {
+      rows = [["Date", "Time", "Item", "SKU", "Type", "Change", "Balance", "Unit", "Reason", "Reference", "Note", "By"]]
+        .concat(S.moves.filter((m) => S.act === "all" || m.type === S.act).map((m) => [new Date(m.at).toLocaleDateString("en-AU"), timeOf(m.at), m.itemName, m.sku,
+          { in: "In", out: "Out", count: "Stocktake" }[m.type], m.delta, m.balance, m.unit, m.reason, m.ref, m.note, who(m.by)]));
+      name = `srg-stock-movements-${stamp}.csv`;
+    }
+    try { await downloads.save({ filename: name, data: rows.map((r) => r.map(csvCell).join(",")).join("\r\n") }); toast("Saved " + name); }
+    catch (e) { if (e?.code !== "declined") toast("Couldn't save the file here.", true); }
+  }
+
+  // ---------- events ----------
+  let camTarget = "item";
+  async function handleFiles(files) {
+    files = [...files].filter((f) => f.type.startsWith("image/") || !f.type);
+    if (!files.length) return;
+    if (camTarget === "form") {
+      for (const f of files) S.pending.push({ blob: f, url: URL.createObjectURL(f) });
+      renderOverlay();
+    } else addPhotosToItem(files);
+  }
+  $("#camInput").addEventListener("change", (e) => { handleFiles(e.target.files); e.target.value = ""; });
+  $("#fileInput").addEventListener("change", (e) => { handleFiles(e.target.files); e.target.value = ""; });
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button, [data-item]");
+    if (e.target.id === "overlay") { closeOverlay(); return; }
+    if (e.target.closest("#lightbox")) { $("#lightbox").hidden = true; return; }
+    if (!t) return;
+    const d = t.dataset;
+    if (t.id === "addBtn" || "add" in d) return openForm(null);
+    if (d.tab) { location.hash = d.tab; return; }
+    if (d.goto) { location.hash = d.goto; return; }
+    if ("only" in d && !t.closest(".log-row")) { S.only = S.only === d.only ? "" : d.only; if (S.tab !== "stock") location.hash = "stock"; render(); return; }
+    if ("cat" in d) { S.cat = d.cat; render(); return; }
+    if (d.act) { S.act = d.act; render(); return; }
+    if (d.item) return openItem(d.item);
+    if ("close" in d) return closeOverlay();
+    if (d.t) { S.moveType = d.t; S.fresh = ["mvReason", "mvQty"]; renderOverlay(); return; }
+    if (d.step) { const q = $("#mvQty"); q.value = Math.max(0, (parseFloat(q.value) || 0) + Number(d.step)); updatePreview(); return; }
+    if (d.cam) { camTarget = d.cam; $("#camInput").click(); return; }
+    if (d.pick) { camTarget = d.pick; $("#fileInput").click(); return; }
+    if (d.zoom) { $("#lbImg").src = blobUrl(d.zoom); $("#lightbox").hidden = false; return; }
+    if (d.rmphoto) return removePhoto(d.rmphoto);
+    if (d.rmpending) { const [p] = S.pending.splice(Number(d.rmpending), 1); if (p) URL.revokeObjectURL(p.url); renderOverlay(); return; }
+    if (d.edit) return openForm(d.edit);
+    if ("delete" in d) { S.confirmDelete = true; renderOverlay(); return; }
+    if ("deleteNo" in d) { S.confirmDelete = false; renderOverlay(); return; }
+    if ("deleteYes" in d) return deleteItem();
+    if (t.id === "exportStock") return exportCsv("stock");
+    if (t.id === "exportMoves") return exportCsv("moves");
+  });
+  document.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (S.busy) return;
+    if (e.target.id === "itemForm") saveForm();
+    if (e.target.id === "moveForm") submitMove();
+  });
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "q") { S.q = e.target.value; renderFilters(); renderGrid(); if (S.tab !== "stock") location.hash = "stock"; }
+    if (e.target.id === "mvQty") updatePreview();
+  });
+  document.addEventListener("change", (e) => {
+    if (e.target.id === "locSel") { S.loc = e.target.value; render(); }
+    if (e.target.id === "sortSel") { S.sort = e.target.value; try { localStorage.setItem("srg-sort", S.sort); } catch (_) {} render(); }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!$("#lightbox").hidden) { $("#lightbox").hidden = true; return; }
+    if (S.open) closeOverlay();
+  });
+  // drag & drop photos onto an open item or the add form
+  document.addEventListener("dragover", (e) => { if (S.open && assets) e.preventDefault(); });
+  document.addEventListener("drop", (e) => {
+    if (!S.open || !assets || !e.dataTransfer?.files?.length) return;
+    e.preventDefault(); camTarget = S.open.kind === "form" ? "form" : "item"; handleFiles(e.dataTransfer.files);
+  });
+
+  function route() {
+    const h = location.hash.replace("#", "");
+    S.tab = h === "activity" ? "activity" : "stock";
+    render();
+  }
+  window.addEventListener("hashchange", route);
+  document.addEventListener("error", (e) => { if (e.target && e.target.tagName === "IMG") e.target.style.visibility = "hidden"; }, true);
+
+  // ---------- boot ----------
+  async function boot() {
+    try { const s = localStorage.getItem("srg-sort"); if (s) S.sort = s; } catch (_) {}
+    route();
+    if (!window.claude?.use) { S.offline = true; render(); return; }
+    const timer = setTimeout(() => { if (!S.loaded) { S.stale = true; render(); } }, 10000);
+    [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db) { clearTimeout(timer); S.offline = true; render(); return; }
+    if (user) {
+      S.uid = await user.id();
+      const cw = await user.can("data.write");
+      if (cw === false) S.canWrite = false;
+    }
+    window.claude.use("assets").then((a) => { assets = a; render(); });
+    window.claude.use("downloads").then((d) => { downloads = d; render(); });
+
+    db.collection("items").onSnapshot((snap) => {
+      S.items = new Map(snap.docs.map((d) => [d.id, { id: d.id, ...d.data() }]));
+      if (!snap.metadata.fromCache) { S.loaded = true; S.stale = false; clearTimeout(timer); }
+      else if (snap.size) S.loaded = true;
+      render();
+    }, (e) => { clearTimeout(timer); S.loaded = true; $("#notice").hidden = false; $("#notice").textContent = errMsg(e); render(); });
+
+    db.collection("moves").orderBy("at", "desc").limit(300).onSnapshot((snap) => {
+      S.moves = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderLists();
+    }, () => {});
+  }
+  boot();
+})();
+</script>
